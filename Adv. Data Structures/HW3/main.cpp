@@ -34,17 +34,18 @@ Node* Node::newNode(char c, unsigned long long freq) { // Create a new node and 
 	return p;
 };
 
-void getFreq(unsigned long long freq[256], const string & fileName); // Read from file and change freq so that freq[n] = freq of char with ascii code N
+string getBuffer(const string & inputFile); // This helper function will read the input file and return a "buffer" that contains the contents of the text
+void getFreq(unsigned long long freq[256], const string & buffer); // Read from buffer and change freq so that freq[n] = freq of char with ascii code N
 void huffman(string code[256], const unsigned long long freq[256]);
 void traverse(string code[256], Node* p); // Recursive function to traverse huffman tree
 void traverse(string code[256], Node* p, string temp, char b);
 void deallocate(Node* p); // Helper function to deallocate the nodes in the tree from DMA in huffman function
-void compressWrite(const string code[256], string inputFile, string outputFile); // Reads the input file and writes the code to the output file
-ifstream ifOpenBin(string fileName); // Opens input files in binary mode
-ofstream ofOpenBin(string fileName); // Opens output files in binary mode
+void compressWrite(const string code[256], const string & buffer, const string & outputFile); // Reads the input file and writes the code to the output file
+ifstream ifOpenBin(const string & fileName); // Opens input files in binary mode
+ofstream ofOpenBin(const string & fileName); // Opens output files in binary mode
 
 int main() {
-	string code[256], inputFile, littleOut, bigOut;
+	string code[256], inputFile, littleOut, bigOut, buffer;
 	unsigned long long f[256];	
 	cout << "Enter the name of your input file." << endl;
 	getline(cin, inputFile);
@@ -52,31 +53,24 @@ int main() {
 	getline(cin, littleOut);
 	cout << "Enter the name of the file to which we will write the decoded compressed file. " << endl;
 	getline(cin, bigOut);
-	getFreq(f, inputFile); // Get the frequency of each char and write it to our "f" array.
+	buffer = getBuffer(inputFile);
+	getFreq(f, buffer); // Get the frequency of each char and write it to our "f" array.
 	huffman(code, f); // Build the huffman code from our freq values and store it in the code string
-	compressWrite(code, inputFile, littleOut); // Read from the input file and write the huffman encoded chars to the "little" output file.
+	compressWrite(code, buffer, littleOut); // Read from the input file and write the huffman encoded chars to the "little" output file.
 	system("pause");
 	return 0;
 }
 
-void getFreq(unsigned long long freq[256], const string & fileName) {
+void getFreq(unsigned long long freq[256], const string & buffer) {
 	for (unsigned i = 0; i < 256; i++) { // Initialize freq array
 		freq[i] = 0;
 	}
-	ifstream in = ifOpenBin(fileName);
-	char c;
-	if (!in)
-		die("could not open file.");
-	while (in.get(c)) {
-		if (c < 0)
-			freq[c + 256]++;
-		else {
-			freq[c]++;
-		}
+	for (unsigned i = 0; i < buffer.size(); i++) { // Read through buffer string and increment freq[i] where is i is the hex value of the char
+		if (buffer.at(i) < 0) // Handle the case where the char is < 0 to get appropriate array index for ASCII value
+			freq[buffer.at(i) + 256]++;
+		else 
+			freq[buffer.at(i)]++;
 	}
-	if (!in.eof())
-		die("there was an error reading the file.");
-	in.close();
 }
 
 void huffman(string code[256], const unsigned long long freq[256]) {
@@ -100,7 +94,7 @@ void huffman(string code[256], const unsigned long long freq[256]) {
 		root->_right = n2;
 		q.push(root);
 	}
-	traverse(code, root);
+	traverse(code, root); // Traverse will assign the huffman code for each char, and store it into the "code" array
 	cout << left << setw(9) << "ASCII #" << setw(11) << "Freq" << setw(40) << "Code" << endl;
 	for (int i = 0; i < 128; i++) {
 		if (freq[i] > 0)
@@ -153,23 +147,30 @@ void deallocate(Node* p) {	// Recursive memory deallocation
 	delete p;
 }
 
-void compressWrite(const string code[256], string inputFile, string outputFile) { // Reads the input file and writes the code to the "little" output file
-	ifstream in = ifOpenBin(inputFile);
+void compressWrite(const string code[256], const string & buffer, const string & outputFile) { // Reads the input file and writes the code to the "little" output file
 	ofstream out = ofOpenBin(outputFile);
-	char c;
-	while (in.get(c)) { // Go through input file and write the huffman code for each character to the output file
-		if (c < 0) // Handle the case where the char value < 0
-			out << code[c + 256];
+	for (unsigned i = 0; i < buffer.size(); i++) // Iterate through buffer and write the code for eachc corresponding char to the output file.
+		if (buffer.at(i) < 0)
+			out << code[buffer.at(i) + 256];
 		else
-			out << code[c];
-	}
-	if (!in.eof()) // Check if EOF is ok
-		die("there was an error reading the file.");
-	in.close(); // Close files
+			out << code[buffer.at(i)];
 	out.close();
 } 
 
-ifstream ifOpenBin(string fileName) { // Helper function that opens input files in binary mode
+string getBuffer(const string & inputFile) {
+	string buffer;
+	char c;
+	ifstream in = ifOpenBin(inputFile);
+	while (in.get(c)) { // Read the file and put each char in the buffer string
+		buffer += c;
+	}
+	if (!in.eof()) // Check if EOF is OK
+		die("there was an error reading the file.");
+	in.close();
+	return buffer;
+}
+
+ifstream ifOpenBin(const string & fileName) { // Helper function that opens input files in binary mode
 	ifstream f;
 	f.open(fileName, ios::binary);
 	if (!f)
@@ -177,7 +178,7 @@ ifstream ifOpenBin(string fileName) { // Helper function that opens input files 
 	return f;
 }
 
-ofstream ofOpenBin(string fileName) { // Helper function that opens output files in binary mode
+ofstream ofOpenBin(const string & fileName) { // Helper function that opens output files in binary mode
 	ofstream f;
 	f.open(fileName, ios::binary);
 	if (!f)
