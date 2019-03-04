@@ -23,10 +23,10 @@
     <Text Include="input file.txt">
       <Filter>Source Files</Filter>
     </Text>
-    <Text Include="little out.txt">
+    <Text Include="big out.txt">
       <Filter>Source Files</Filter>
     </Text>
-    <Text Include="big out.txt">
+    <Text Include="little out.bin">
       <Filter>Source Files</Filter>
     </Text>
   </ItemGroup>
