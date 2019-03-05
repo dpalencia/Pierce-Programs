@@ -1,7 +1,7 @@
 // Palencia, Daniel
 // 2-27-19
 // CS 532 Advanced Data Structures
-// Homework 1 Huffman Code
+// Homework 3 Huffman Encode and Decode
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -11,9 +11,7 @@ using namespace std;
 void die(const string & e); // Die helper function
 string getBuffer(const string & inputFile); // This helper function will read the input file and return a "buffer" that contains the contents of the text
 void getFreq(unsigned long long freq[256], const string & buffer); // Read from buffer and change freq so that freq[n] = freq of char with ascii code N
-void deallocate(Node* p); // Helper function to deallocate the nodes in the tree from DMA in huffman function
 void compressWrite(const string code[256], const string & buffer, const string & outputFile); // Reads the input file and writes the code to the output file
-void decode(const string & inputFile, const string & outputFile, const Node* tree);
 ifstream ifOpenBin(const string & fileName); // Opens input files in binary mode
 ofstream ofOpenBin(const string & fileName); // Opens output files in binary mode
 class Node {
@@ -29,6 +27,8 @@ public:
 		return n1->_freq > n2->_freq;
 	}
 };
+void decode(const string & inputFile, const string & outputFile, const Node* tree);
+void deallocate(Node* p); // Helper function to deallocate the nodes in the tree from DMA in huffman function
 void traverse(const Node* p, ofstream & o, const string & buffer); // Traverse except this time we return the char contained in the leaf for decoding purposes
 void traverse(string code[256], Node* p); // Recursive function to traverse huffman tree and encode
 void traverse(string code[256], Node* p, string temp, char b);
@@ -146,26 +146,23 @@ void traverse(const Node* p, ofstream & o, const string & buffer) { // Recursive
 
 	if (p->_left == nullptr && p->_right == nullptr) {
 		o.put(p->_c);
+		return;
 	}
 
-	if (p->_left != nullptr && p->_right != nullptr) {
-		if (bitsRemaining == 0) {
-			bitsRemaining = 8;
-			i++;
-		}
+	if (bitsRemaining == 0) {
+		bitsRemaining = 8;
+		i++;
+	}
 
-		if ((buffer[i] >> (bitsRemaining - 1)) & 1) {// If the leftmost bit is 1, traverse right
-			bitsRemaining--;
-			traverse(p->_right, o, buffer);
-		}
-		else {
-			bitsRemaining--;
-			traverse(p->_left, o, buffer); // If the leftmost bit is 0, traverse left
-		}
+	if ((buffer[i] >> (bitsRemaining - 1)) & 1) {// If the leftmost bit is 1, traverse right
+		bitsRemaining--;
+		traverse(p->_right, o, buffer);
+	}
+	else {
+		bitsRemaining--;
+		traverse(p->_left, o, buffer); // If the leftmost bit is 0, traverse left
 	}
 }
-
-
 void deallocate(Node* p) {	// Recursive memory deallocation
 	if (p->_left != nullptr && p->_right != nullptr) {
 		deallocate(p->_left);
@@ -173,8 +170,6 @@ void deallocate(Node* p) {	// Recursive memory deallocation
 	}
 	delete p;
 }
-
-
 void compressWrite(const string code[256], const string & buffer, const string & outputFile) { // Reads the input file and writes the code to the "little" output file
 	ofstream out = ofOpenBin(outputFile);
 	string carr; // This will hold the huffman-encoded counterpart of the buffer
@@ -203,6 +198,7 @@ void compressWrite(const string code[256], const string & buffer, const string &
 			byte |= 1; // Put the current bit into our byte
 		remainingBits--;
 	}
+	out.put(byte); // Write the last byte
 	out.close();
 }
 
