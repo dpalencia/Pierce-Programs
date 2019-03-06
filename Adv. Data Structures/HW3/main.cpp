@@ -96,15 +96,6 @@ Node* huffman(string code[256], const unsigned long long freq[256]) {
 		q.push(root);
 	}
 	traverse(code, root); // Traverse will assign the huffman code for each char, and store it into the "code" array
-	cout << left << setw(9) << "ASCII #" << setw(11) << "Freq" << setw(40) << "Code" << endl;
-	for (int i = 0; i < 128; i++) {
-		if (freq[i] > 0)
-			cout << setw(9) << i << setw(11) << freq[i] << setw(40) << code[i] << endl;
-	}
-	for (int i = -128; i < 0; i++) {
-		if (freq[i + 256] > 0)
-			cout << setw(9) << i + 256 << setw(11) << freq[i + 256] << setw(40) << code[i + 256] << endl;
-	}
 	return root;
 }
 
@@ -143,24 +134,21 @@ void traverse(string code[256], Node* p, string temp, char b) {
 void traverse(const Node* p, ofstream & o, const string & buffer) { // Recursively traverse tree and write to the output file
 	static unsigned bitsRemaining = 8;
 	static unsigned i = 0;
-
 	if (p->_left == nullptr && p->_right == nullptr) {
 		o.put(p->_c);
 		return;
 	}
-
 	if (bitsRemaining == 0) {
 		bitsRemaining = 8;
 		i++;
 	}
-
-	if ((buffer[i] >> (bitsRemaining - 1)) & 1) {// If the leftmost bit is 1, traverse right
+	if ((buffer[i] >> (bitsRemaining - 1)) & 1) { // If the current bit is 1, traverse right
 		bitsRemaining--;
 		traverse(p->_right, o, buffer);
 	}
 	else {
 		bitsRemaining--;
-		traverse(p->_left, o, buffer); // If the leftmost bit is 0, traverse left
+		traverse(p->_left, o, buffer); // If the current bit is 0, traverse left
 	}
 }
 void deallocate(Node* p) {	// Recursive memory deallocation
@@ -186,7 +174,8 @@ void compressWrite(const string code[256], const string & buffer, const string &
 	memcpy(lengthBytes, countPtr, sizeof(*countPtr)); // Copy the memory in countPtr to lengthBytes ptr
 	out.write(lengthBytes, 8);
 	unsigned remainingBits = 8; // Count how many bits we have as we write bits to the byte variable
-	unsigned byte = 0; // This will be the byte variable we will bit manipulate
+	char byte = 0; // This will be the 1 byte variable we will bit manipulate
+	cout << "Writing compressed data to " << outputFile << "..." << endl;
 	for (unsigned i = 0; i < carr.size(); i++) {
 		if (remainingBits == 0) {
 			out.put(byte);
@@ -198,8 +187,10 @@ void compressWrite(const string code[256], const string & buffer, const string &
 			byte |= 1; // Put the current bit into our byte
 		remainingBits--;
 	}
+	byte <<= remainingBits; // Push the written bits to the left of the byte
 	out.put(byte); // Write the last byte
 	out.close();
+	cout << "Compression complete!" << endl;
 }
 
 void decode(const string & inputFile, const string & outputFile, const Node* tree) {
@@ -217,11 +208,13 @@ void decode(const string & inputFile, const string & outputFile, const Node* tre
 	}
 	if (!in.eof())
 		die("there was an error reading the file.");
+	cout << "Decompressing data from " << inputFile << " to " << outputFile << "..." << endl;
 	for (unsigned i = 0; i < charCount; i++) {
 		traverse(tree, out, buffer);
 	}
 	in.close();
 	out.close();
+	cout << "Decompression complete!" << endl;
 }
 
 string getBuffer(const string & inputFile) { // Read a file and get the string buffer for input

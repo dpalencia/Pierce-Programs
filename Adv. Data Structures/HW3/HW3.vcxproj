@@ -120,7 +120,6 @@
   <ItemGroup>
     <Text Include="big out.txt" />
     <Text Include="input file.txt" />
-    <Text Include="little out.bin" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
