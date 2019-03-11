@@ -1,5 +1,5 @@
 // Palencia, Daniel
-// 2-27-19
+// 3-6-19
 // CS 532 Advanced Data Structures
 // Homework 3 Huffman Encode and Decode
 #include <iostream>
@@ -42,9 +42,9 @@ int main() {
 	getline(cin, littleOut);
 	cout << "Enter the name of the file to which we will write the decoded compressed file. " << endl;
 	getline(cin, bigOut);
-	buffer = getBuffer(inputFile);
+	buffer = getBuffer(inputFile); // "Buffer" is a string that contains the contents of the input file
 	getFreq(f, buffer); // Get the frequency of each char and write it to our "f" array.
-	Node* huff = huffman(code, f); // Build the huffman code from our freq values and store it in the code string
+	Node* huff = huffman(code, f); // Build the huffman code from our freq values and store it in the code string; return a pointer to the tree root
 	compressWrite(code, buffer, littleOut); // Read from the buffer and write the huffman encoded chars to the "little" output file.
 	decode(littleOut, bigOut, huff); // Decode the compressed file and write it to the big out file
 	system("pause");
