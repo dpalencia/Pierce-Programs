@@ -140,10 +140,13 @@ ostream & operator<<(ostream & o, const S & s) { // Operator overload to clean u
 }
 
 S heapPop(S ar[], unsigned els, bool(*sbb)(const S & a, const S & b)) {
+	static unsigned size = els - 1; // Keep track of the size of the heap as we keep popping
+	// This might work better as a class if we wish to add more functions (push, insert)
 	S ret = ar[1];
-	for (unsigned i = 1; i < (els - 1); i++) {
+	for (unsigned i = 1; i < size; i++) {
 		ar[i] = ar[i + 1];
 	}
-	heapify(ar, els, sbb); // Maintain the heap property as we go
+	size--;
+	heapify(ar, size + 1, sbb); // Maintain the heap property as we go
 	return ret;
 }
