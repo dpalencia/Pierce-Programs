@@ -259,3 +259,4 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+/Adv. Data Structures/HW5/Downloads - Shortcut.lnk
