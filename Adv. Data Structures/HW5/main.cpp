@@ -20,17 +20,17 @@ S heapPop(S ar[], unsigned els, bool(*sbb)(const S & a, const S & b));
 ostream & operator<<(ostream & o, const S & s);
 int main() {
 	S tree[11] = {
-		{0, 0, '0'}, // This element is an unused placeholder; we will begin our tree at index 1.
-		{3.141496, 9, '3'},
-		{1.337, 8, 'h'},
-		{2.7182818, 5, 'e'},
-		{1.6185, 1, 'g'},
-		{.000001, 1000, '5'},
-		{1.113, 123, 'r'},
-		{100.011, 50, '%'},
-		{93.62, 42, '^'},
-		{12939, 10, 'Q'},
-		{0.191928383, 10, 'v'}
+		{ 0, 0, '0' }, // This element is an unused placeholder; we will begin our tree at index 1.
+	{ 3.141496, 9, '3' },
+	{ 1.337, 8, 'h' },
+	{ 2.7182818, 5, 'e' },
+	{ 1.6185, 1, 'g' },
+	{ .000001, 1000, '5' },
+	{ 1.113, 123, 'r' },
+	{ 100.011, 50, '%' },
+	{ 93.62, 42, '^' },
+	{ 12939, 10, 'Q' },
+	{ 0.191928383, 10, 'v' }
 	};
 	// Show the unaltered tree
 	cout << "THE UNSORTED ARRAY: " << endl;
@@ -43,7 +43,7 @@ int main() {
 	cout << endl;
 	// Heapify the tree using sbb1 sorting
 	cout << "---------Popping the entire heap as a min heap\n"
-		 << "---------increasing order (comparing ints using sbb1)" << endl;
+		<< "---------increasing order (comparing ints using sbb1)" << endl;
 	heapify(tree, 11, sbb1);
 	// Output the sorted heap, except this time we pop (remove) the root as we go
 	for (unsigned i = 1; i < 11; i++)
@@ -102,8 +102,8 @@ void demote(unsigned index, S bt[], unsigned els, bool(*sbb)(const S & a, const 
 	if (index * 2 > (els - 1)) // Check the base case (we're a leaf)
 		return;
 	unsigned hpni; // higher priority node index
-	// Identify the higher priority node 
-	if (((index * 2) + 1) > (els - 1) || sbb(bt[index * 2], bt[(index * 2) + 1])) 
+				   // Identify the higher priority node 
+	if (((index * 2) + 1) > (els - 1) || sbb(bt[index * 2], bt[(index * 2) + 1]))
 		// Right child is out of bounds || Left Child is higher priority than Right Child
 		hpni = index * 2;
 	else
@@ -133,15 +133,15 @@ void show(const S ar[], unsigned els) { // We begin at index 1 because we are wo
 	}
 }
 ostream & operator<<(ostream & o, const S & s) { // Operator overload to clean up show function
-	o << left << setw(12) << s.x 
-      << setw(12) <<  s.n 
-      << setw(8) << s.c;
+	o << left << setw(12) << s.x
+		<< setw(12) << s.n
+		<< setw(8) << s.c;
 	return o;
 }
 
 S heapPop(S ar[], unsigned els, bool(*sbb)(const S & a, const S & b)) {
 	static unsigned size = els - 1; // Keep track of the size of the heap as we keep popping
-	// This might work better as a class if we wish to add more functions (push, insert)
+									// This might work better as a class if we wish to add more functions (push, insert)
 	S ret = ar[1];
 	for (unsigned i = 1; i < size; i++) {
 		ar[i] = ar[i + 1];
