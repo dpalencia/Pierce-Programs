@@ -40,7 +40,7 @@ int main() {
 
 	// Bitmap info header setup
 	bmih.biSize = 40;
-	bmih.biWidth = I_S; // Negative to set the origin to be the right side of image
+	bmih.biWidth = I_S;
 	bmih.biHeight = I_S;
 	bmih.biPlanes = 1;
 	bmih.biBitCount = 8; // 256 colors in each pixel
@@ -71,7 +71,9 @@ int main() {
 	ptr = &colorTable[0];
 	o.write(ptr, sizeof(colorTable));
 	for (int i = 0; i < I_S; i++) {
-		o.write(&bmp[i][0], I_S);
+		for (int j = 0; j < I_S; j++) {
+			o.write(&bmp[i][j], 1);
+		}
 	}
 	o.close();
 	system("mspaint cabpaths.bmp");
@@ -84,18 +86,19 @@ int main() {
 void bmpRead(const string & fileName, char** bmp) {
 	ifstream i; // Input file
 	i.open(fileName, ios::binary); // Open file in binary mode
-	float latMax = 40.748418;
+	float latMax = 40.830519;
 	float latMin = 40.700455;
-	float longMax = 74.045;
-	float longMin = 73.91;
+	float longMax = 74.045033;
+	float longMin = 73.914979;
 	int x;
 	int y;
 	while (!i.eof()) {
 		x = convertToIndex(i, latMax, latMin);
-		y = convertToIndex(i, longMax, longMin);
+		y = 1023 - convertToIndex(i, longMax, longMin);
+		//y = convertToIndexLat(i, longMax, longMin);
 		if (0 <= x && x < 1024 && 0 <= y && y < 1024) {
-			if(bmp[x][y] < 256)
-				bmp[x][y] = 255;
+			if (bmp[x][y] < 256)
+				bmp[x][y]+= 50;
 		}
 	}
 	i.close();
