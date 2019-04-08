@@ -14,23 +14,30 @@ int main() {
 	char c;
 	getline(cin, input);
 	istringstream line(input); 
-	oprnd.push(line.get());
-	oprtr.push(line.get());
-	// implement whitepsace ignore
-	while (line.get(c)) {
-		if (c == '(')
-			oprtr.push(c);
-		else if (c == ')') {
-			while (oprtr.top() != '(') {
-				evaluateTop(oprnd, oprtr);
+	line >> c;
+	while (!line.eof()) {
+		if ((c == 48 || c == 49)) // Push if it's a bool value (1 or 0)
+			oprnd.push(c - 48);
+		else { // Otherwise it's an operator
+			if (c == ')') { // Evaluate until the left paren
+				while (oprtr.top() != '(')
+					evaluateTop(oprnd, oprtr);
+				oprtr.pop(); // discard the left paren
 			}
-			oprtr.pop(); // discard that left paren
+			else if (oprtr.empty() || c == '(' || prec(c) > prec(oprtr.top())) {
+				oprtr.push(c);
+			}
+			else if (prec(oprtr.top()) >= prec(c)) { // if the precedence of the preceding operator is >=, evaluate from stack
+				while (!oprtr.empty() && oprtr.top() != '(' && prec(oprtr.top() >= prec(c))) { // keep going until stack top precedence is not >=
+					evaluateTop(oprnd, oprtr);
+				}
+				oprtr.push(c); // then push the operator onto the stack and continue
+			}
 		}
-		while (prec(c) <= prec(oprnd.top())) {
-			evaluateTop(oprnd, oprtr);
-		}
-	}	
-	evaluateTop(oprnd, oprtr);
+		line >> c;
+	}
+ 	while(!oprtr.empty())
+		evaluateTop(oprnd, oprtr); // keep evaluating until operator stack is empty
 	cout << oprnd.top() << endl;
 	system("pause");
 	return 0;
@@ -40,7 +47,7 @@ void evaluateTop(oprnd & oprnd, oprtr & oprtr) {
 	bool r = oprnd.top(); oprnd.pop();
 	bool l;
 	char c = oprtr.top(); oprtr.pop();
-	switch (c) {
+	switch (c) { 
 		case '!':
 			oprnd.push(!r);
 			return;
@@ -56,8 +63,8 @@ void evaluateTop(oprnd & oprnd, oprtr & oprtr) {
 			return;
 		case '|':
 			l = oprnd.top();
-			oprnd.push(l | r);
 			oprnd.pop();
+			oprnd.push(l | r);
 			return;
 	}
 	return;
@@ -73,5 +80,7 @@ int prec(char c) {
 			return 1;
 		case '|':
 			return 0;
+		case '(':
+			return -1;
 	}
 }
