@@ -1,3 +1,5 @@
+// Palencia, Daniel		CS546 Section 13507		4/9/19
+// Second Laboratory Assignment - Map NYC Taxi Destinations
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -70,15 +72,14 @@ int main() {
 	o.write(ptr, 40);
 	ptr = &colorTable[0];
 	o.write(ptr, sizeof(colorTable));
-	for (int i = 0; i < I_S; i++) {
+	for (int i = 0; i < I_S; i++) { // Write out each byte of BMP array 
 		for (int j = 0; j < I_S; j++) {
 			o.write(&bmp[i][j], 1);
 		}
 	}
 	o.close();
-	system("mspaint cabpaths.bmp");
-
 	delete[] bmp;
+	system("mspaint cabpaths.bmp");
 	return 0;
 }
 
@@ -95,10 +96,9 @@ void bmpRead(const string & fileName, char** bmp) {
 	while (!i.eof()) {
 		x = convertToIndex(i, latMax, latMin);
 		y = 1023 - convertToIndex(i, longMax, longMin);
-		//y = convertToIndexLat(i, longMax, longMin);
 		if (0 <= x && x < 1024 && 0 <= y && y < 1024) {
 			if (bmp[x][y] < 256)
-				bmp[x][y]+= 50;
+				bmp[x][y]++;
 		}
 	}
 	i.close();
