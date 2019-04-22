@@ -1,8 +1,12 @@
+// Palencia, Daniel
+// 4-10-19
+// CS 542 Discrete Structures
+// Homework #8 Boolean Calculator
 #include <iostream>
 #include <stack>
 #include <string>
 #include <sstream>
-using namespace std; 
+using namespace std;
 typedef stack<bool> oprnd;
 typedef stack<char> oprtr;
 int prec(char c); // Check precedence of a char represented as an int
@@ -12,33 +16,37 @@ int main() {
 	oprtr oprtr;
 	string input;
 	char c;
-	getline(cin, input);
-	istringstream line(input); 
-	line >> c;
-	while (!line.eof()) {
-		if ((c == 48 || c == 49)) // Push if it's a bool value (1 or 0)
-			oprnd.push(c - 48);
-		else { // Otherwise it's an operator
-			if (c == ')') { // Evaluate until the left paren
-				while (oprtr.top() != '(')
-					evaluateTop(oprnd, oprtr);
-				oprtr.pop(); // discard the left paren
-			}
-			else if (oprtr.empty() || c == '(' || prec(c) > prec(oprtr.top())) {
-				oprtr.push(c);
-			}
-			else if (prec(oprtr.top()) >= prec(c)) { // if the precedence of the preceding operator is >=, evaluate from stack
-				while (!oprtr.empty() && oprtr.top() != '(' && prec(oprtr.top() >= prec(c))) { // keep going until stack top precedence is not >=
-					evaluateTop(oprnd, oprtr);
-				}
-				oprtr.push(c); // then push the operator onto the stack and continue
-			}
-		}
+	cout << "Enter your boolean values, operators, and parens in a line to calculate the expression.\nEnter an empty line to terminate the program." << endl;
+	for(getline(cin, input); input != ""; getline(cin, input)) {
+		istringstream line(input);
 		line >> c;
-	}
- 	while(!oprtr.empty())
-		evaluateTop(oprnd, oprtr); // keep evaluating until operator stack is empty
-	cout << oprnd.top() << endl;
+		while (!line.eof()) {
+			if ((c == 48 || c == 49)) // Push if it's a bool value (1 or 0)
+				oprnd.push(c - 48);
+			else { // Otherwise it's an operator
+				if (c == ')') { // Evaluate until the left paren
+					while (oprtr.top() != '(')
+						evaluateTop(oprnd, oprtr);
+					oprtr.pop(); // discard the left paren
+				}
+				else if (oprtr.empty() || c == '(' || prec(c) > prec(oprtr.top())) {
+					oprtr.push(c);
+				}
+				else if (prec(oprtr.top()) >= prec(c)) { // if the precedence of the preceding operator is >=, evaluate from stack
+					while (!oprtr.empty() && oprtr.top() != '(' && prec(oprtr.top() >= prec(c))) { // keep going until stack top precedence is not >=
+						evaluateTop(oprnd, oprtr);
+					}
+					oprtr.push(c); // then push the operator onto the stack and continue
+				}
+			}
+			line >> c;
+		}
+		while (!oprtr.empty())
+			evaluateTop(oprnd, oprtr); // keep evaluating until operator stack is empty
+		cout << oprnd.top() << endl;
+		oprnd.pop();
+	} 
+
 	system("pause");
 	return 0;
 }
