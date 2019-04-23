@@ -11,18 +11,14 @@ typedef pair<VertexSet, EdgeSet> Graph; // Graph is represented as a set of vert
 void graphShow(const Graph & g);
 Graph createComplete(unsigned v); // Creates a complete graph with v verts
 bool isComplete(const Graph & g); // Checks if a graph is complete
-Graph createCycle(unsigned v);
-bool isCycle(const Graph & g);
-/* Graph createCycle(unsigned v);
-bool isCycle(const Graph & g);
-v  >=  3  (that  is,  these  funcs  may  assume  without  checking  that  v  >=  3  and  that  the  number  of 
-vertices in g is >= 3, respectively (and likewise for the following))
-The first func's job is to create and return a cycle graph with v vertices.
-The second func's job is to return whether g is a cycle graph.
-*/
+Graph createCycle(unsigned v); // Create a cycle graph
+bool isCycle(const Graph & g); // Return if it's a cycle graph
+Graph createWheel(unsigned v); // Create a wheel graph
+bool isWheel(const Graph & g); // Return if it's a wheel graph
 int main() {
 	Graph complete = createComplete(5);
 	Graph cycle = createCycle(5);
+	Graph wheel = createWheel(5);
 	for (int i = 0; i < 2; i++) {
 		if (isComplete(complete)) {
 			cout << "This graph is complete: " << endl;
@@ -40,8 +36,17 @@ int main() {
 			cout << "This graph is not a cycle: " << endl;
 			graphShow(cycle);
 		}
+		if (isWheel(wheel)) {
+			cout << "This graph is a wheel: " << endl;
+			graphShow(wheel);
+		}
+		else if (!isWheel(wheel)) {
+			cout << "This graph is not a wheel: " << endl;
+			graphShow(wheel);
+		}
 		cycle.second.erase(cycle.second.begin());
 		complete.second.erase(complete.second.begin());
+		wheel.second.erase(--wheel.second.end());
 	}
 	
 	
@@ -106,3 +111,39 @@ bool isCycle(const Graph & g) {
 	// 	return 0;
 	return 1;
 }
+
+Graph createWheel(unsigned v) { // Create a wheel graph
+	// First create a cycle
+	Graph ret = createCycle(v - 1);
+	for (Vertex vert : ret.first) { // Connect each edge in the cycle to our new vert
+		ret.second.insert(Edge{ vert, (Vertex)(v - 1) });
+	}
+	// Insert the new vertex
+	ret.first.insert(v - 1);
+	return ret;
+}
+
+bool isWheel(const Graph & g) {
+	// Every wheel contains a cycle
+	if (!isCycle(g))
+		return 0;
+	// Here we know it's a cycle: check if there exists a vertex connected once to each other vertex
+	// The vertex with >2 edges is the "center" of the wheel; check for this
+	for (Vertex v : g.first) { // For each vertex
+		int edgeCount = 0; // This counts how many edges the vertex appears in
+		for (Edge e : g.second) { // Check each edge
+			if (e.count(v)) { // If the vertex exists in an edge, increment
+				if (++edgeCount > 2) // The check (vertex with >2 edges is the center of the wheel)
+					return 1;
+			}
+		}
+	}
+	// If we make it this far we know there is no "center" vertex
+	return 0;
+}
+/* 
+
+/*
+v >= 4
+The first func's job is to create and return a wheel graph with v vertices.
+The second func's job is to return whether g is a wheel graph */
