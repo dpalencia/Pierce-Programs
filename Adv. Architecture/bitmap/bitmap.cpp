@@ -8,7 +8,7 @@
 #define I_S 1024 // Image size
 using namespace std;
 void bmpRead(const string & fileName, char** bmp);
-void die(const string & e); // Professor Hart's die function™
+void die(const string & e); // Professor Hart's die functionâ„¢
 int convertToIndex(ifstream & i, float upper, float lower); // Converts a float to an appropriate array index in our bmp
 int main() {
 	BITMAPFILEHEADER bmfh; // Bitmap fileader
@@ -98,7 +98,7 @@ void bmpRead(const string & fileName, char** bmp) {
 		y = 1023 - convertToIndex(i, longMax, longMin);
 		if (0 <= x && x < 1024 && 0 <= y && y < 1024) {
 			if (bmp[x][y] < 256)
-				bmp[x][y]++;
+				bmp[x][y] = 255;
 		}
 	}
 	i.close();
