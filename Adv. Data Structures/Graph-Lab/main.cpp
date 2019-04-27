@@ -1,7 +1,13 @@
+// Palencia, Daniel
+// 4-25-19
+// CS 532 Advanced Data Structures
+// Homework #11 Special Graphs
 #include <iostream>
 #include <set>
 #include <utility>
 #include <cassert>
+#include <iterator>
+#include <ctime>
 using namespace std;
 typedef int Vertex; // Each vertex is an int
 typedef set<Vertex> VertexSet; // Set of vertices
@@ -15,10 +21,14 @@ Graph createCycle(unsigned v); // Create a cycle graph
 bool isCycle(const Graph & g); // Return if it's a cycle graph
 Graph createWheel(unsigned v); // Create a wheel graph
 bool isWheel(const Graph & g); // Return if it's a wheel graph
+Graph createCompleteBipartite(unsigned v1, unsigned v2);
+bool isCompleteBipartite(const Graph & g);
+
 int main() {
 	Graph complete = createComplete(5);
 	Graph cycle = createCycle(5);
 	Graph wheel = createWheel(5);
+	Graph cb = createCompleteBipartite(3, 3);
 	for (int i = 0; i < 2; i++) {
 		if (isComplete(complete)) {
 			cout << "This graph is complete: " << endl;
@@ -44,16 +54,32 @@ int main() {
 			cout << "This graph is not a wheel: " << endl;
 			graphShow(wheel);
 		}
-		cycle.second.erase(cycle.second.begin());
-		complete.second.erase(complete.second.begin());
-		wheel.second.erase(--wheel.second.end());
+		if (isCompleteBipartite(cb)) {
+			cout << "This graph is a complete bipartite graph: " << endl;
+			graphShow(cb);
+		}
+		else if (!isCompleteBipartite(cb)) {
+			cout << "This graph is not a complete bipartite: " << endl;
+			graphShow(cb);
+		}
+		// Remove a random edge from each one of our graphs
+		srand(time(0));
+		auto it = cycle.second.begin();
+		advance(it, rand() % (cycle.second.size() - 1));
+		cycle.second.erase(it);
+		it = complete.second.begin();
+		advance(it, rand() % (complete.second.size() - 1));
+		complete.second.erase(it);
+		it = wheel.second.begin();
+		advance(it, rand() % (wheel.second.size() - 1));
+		wheel.second.erase(it);
+		it = cb.second.begin();
+		advance(it, rand() % (cb.second.size() - 1));
+		cb.second.erase(it);
 	}
-	
-	
 	system("pause");
 	return 0;
 }
-
 
 void graphShow(const Graph & g) {
 	cout << "Vertices:\n";
@@ -66,7 +92,6 @@ void graphShow(const Graph & g) {
 		cout << *(++it) << ")" << endl;
 	}
 }
-
 
 Graph createComplete(unsigned v) {
 	Graph ret; // Our return graph
@@ -128,12 +153,12 @@ bool isWheel(const Graph & g) {
 	if (!isCycle(g))
 		return 0;
 	// Here we know it's a cycle: check if there exists a vertex connected once to each other vertex
-	// The vertex with >2 edges is the "center" of the wheel; check for this
+	// The vertex with as many edges as there are vertices is the center. Check for this
 	for (Vertex v : g.first) { // For each vertex
 		int edgeCount = 0; // This counts how many edges the vertex appears in
 		for (Edge e : g.second) { // Check each edge
 			if (e.count(v)) { // If the vertex exists in an edge, increment
-				if (++edgeCount > 2) // The check (vertex with >2 edges is the center of the wheel)
+				if (++edgeCount == g.first.size() - 1) // Then check (vertex in as many edges as there are other vertices is the center)
 					return 1;
 			}
 		}
@@ -141,9 +166,50 @@ bool isWheel(const Graph & g) {
 	// If we make it this far we know there is no "center" vertex
 	return 0;
 }
-/* 
 
-/*
-v >= 4
-The first func's job is to create and return a wheel graph with v vertices.
-The second func's job is to return whether g is a wheel graph */
+Graph createCompleteBipartite(unsigned v1, unsigned v2) {
+	Graph ret;
+	for (unsigned i = 0; i < v1 + v2; i++) {
+		ret.first.insert(i);
+	}
+	for (unsigned i = 0; i < v1; i++) { // Use a nested for to create each edge
+		for (unsigned j = v1; j < v1 + v2; j++) { // For each v1, connect it to each v2
+			ret.second.insert(Edge{Vertex(i), Vertex(j)});
+		}
+	}
+	return ret;
+}
+
+
+bool isCompleteBipartite(const Graph & g) {
+	int m, k, count;
+	m = k = 0;
+	Edge e1 = *(g.second.begin()); // e1 = first edge
+	for (Edge e : g.second) {  // Look at every edge in the edge set
+		if (*(e.begin()) == *(e1.begin())) // Count the occurences of e1's first vert in the edge set.
+			m++; // # of verts in first partition
+		if (*(++e.begin()) == *(++e1.begin())) // Count the occurences of e2's second vert in the edge set.
+			k++; // # of verts in second partition
+	}
+
+	if (g.second.size() != m * k) // A complete bipartite graph of with must have m * k edges
+		return 0;
+
+	// Iterating through edges like a binary number
+		// (V1, V2)
+	for (int i = 0, j = k, c = 0; c < m * k; c++) {  
+		if (!g.second.count(Edge{ i, j })) {
+			return 0;
+		}
+		if (j == *(++e1.begin()) + m - 1) {
+			i++;
+			j = *(++e1.begin());
+		}
+		else 
+			j++;
+	}
+	
+	return 1; // If we make it this far, all first verts appear exactly m times and all second verts appear exactly k times.
+}
+
+

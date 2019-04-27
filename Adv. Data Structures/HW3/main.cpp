@@ -96,6 +96,11 @@ Node* huffman(string code[256], const unsigned long long freq[256]) {
 		q.push(root);
 	}
 	traverse(code, root); // Traverse will assign the huffman code for each char, and store it into the "code" array
+	for (int i = 0; i < 256; i++) {
+		if (freq[i] > 0) {
+			cout << char(i) << ": " << code[i] << endl;
+		}
+	}
 	return root;
 }
 
@@ -162,10 +167,12 @@ void compressWrite(const string code[256], const string & buffer, const string &
 	ofstream out = ofOpenBin(outputFile);
 	string carr; // This will hold the huffman-encoded counterpart of the buffer
 	for (unsigned i = 0; i < buffer.size(); i++) { // Iterate through buffer and store the huffman encoding into a string
-		if (buffer.at(i) < 0)
+		if (buffer.at(i) < 0) {
 			carr += code[buffer.at(i) + 256];
-		else
+		}
+		else {
 			carr += code[buffer.at(i)];
+		}
 	}
 	// Write the number of chars in the output file as an unsigned long long
 	unsigned long long charCount = buffer.size(); // Get the char count 
