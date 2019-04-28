@@ -1,9 +1,12 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cmath> // ceil() and log() for calculating bit count of an integer
 using namespace std;
+unsigned bitCount(unsigned val); // Takes an unsigned value and returns how many bits are required to hold it.
 char* allocate(unsigned size); // Dynamically allocate main memory
 char** allocateCache(unsigned cacheSize, unsigned lineSize, unsigned assoc); // Dynamically allocate cache as as 2d array
+char** allocateTag(unsigned memSize, unsigned lineSize, unsigned assoc); // Tag array: associative memory
 void die(const string & e);
 int main() {
 	ifstream in;
@@ -89,12 +92,19 @@ int main() {
 
 	in.close(); 
 	// Remember to free your memory, or the computer will explode.
+	delete[] mainMem;
+	delete[] cache;
 	return 0;
 }
 void die(const string & e) {
 	cout << "Error: " << e << endl;
 	exit(EXIT_FAILURE);
 }
+
+unsigned bitCount(unsigned val) {
+	return ceil(log(val) / log(2)); // Calculate # of bits required to hold a value
+}
+
 char* allocate(unsigned size) { // Allocate a block of memory.
 	char* ret = nullptr;
 	try {
@@ -121,4 +131,8 @@ char** allocateCache(unsigned cacheSize, unsigned lineSize, unsigned assoc) {
 		die("could not allocate memory.");
 	}
 	return ret;
+}
+
+char** allocateTag(unsigned memSize, unsigned lineSize, unsigned assoc) {
+
 }
