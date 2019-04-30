@@ -16,8 +16,8 @@ void memWrite(unsigned address, unsigned assoc,
 	const string & data, unsigned sets, unsigned lineSize); 
 // Translates a memory address into a tag, set, and offset
 void bitTranslate(unsigned address, unsigned & tag, unsigned & set, unsigned & offset, unsigned sets, unsigned lineSize); 
-// Checks if a cache line is empty
-bool setIsEmpty(char** cache, unsigned set, unsigned lineSize, unsigned assoc);
+// Checks if a set block is empty, returns the index of the first empty block it finds or -1 if it's empty.
+int setIsEmpty(char** cache, int set, unsigned lineSize, unsigned assoc);
 int main() {
 	ifstream in;
 	in.open("input.txt");
@@ -74,7 +74,7 @@ int main() {
 	}
 	// Now we intialize our memory system with some dynamic memory allocation
 	// Get the number of sets.
-	unsigned sets = setCount(cacheSize, lineSize, assoc);
+	unsigned sets = setCount(cacheSize, lineSize, assoc); // # of sets
 	char* mainMem = allocate(memSize); // Main memory
 	char** cache = allocateCache(cacheSize, lineSize, assoc, sets); // Cache
 	char** tagArr = allocateTag(memSize, lineSize, assoc, sets); // Associative tag array
@@ -142,18 +142,19 @@ char** allocateCache(unsigned cacheSize, unsigned lineSize, unsigned assoc, unsi
 	// [set #][line in set]
 	try {
 		ret = new char*[sets]; // Pointer to pointers to sets (arrays of bytes).
-		for (unsigned i = 0; i < assoc; i++) {
+		for (unsigned i = 0; i < sets; i++) {
 			ret[i] = new char[lineSize * assoc]; // lineSize * asoc = # of bytes per set. Each set has this # of bytes
 		}
 	}
 	catch (bad_alloc &) {
 		die("could not allocate memory.");
 	}
+	// Initialize the cache
 	unsigned size = 0;
 	for (unsigned i = 0; i < sets; i++) {
 		for (unsigned j = 0; j < assoc * lineSize; j++) {
-			size += sizeof(ret[i][j]);
-			ret[i][j] = (char)(0);
+			size += 1;
+			ret[i][j] = '0';
 		}
 	}
 	cout << "Successfully allocated a cache of size " << size << " bytes." << endl;
@@ -165,14 +166,21 @@ char** allocateTag(unsigned memSize, unsigned lineSize, unsigned assoc, unsigned
 	// Get # of bits needed to hold a tag
 	double tagBits = bitCount(memSize) - bitCount(sets) - bitCount(lineSize);
 	unsigned tagBytes = ceil(tagBits / 8); // Just enough bytes to hold the # of bits per tag
-	char** ret = new char*[sets]; // Our tag array will hold tags of each block in a 2d array of size (sets * associativity * tagBytes)
-	for (unsigned i = 0; i < assoc; i++) {
-		ret[i] = new char[tagBytes * assoc]; 
+	char** ret = nullptr;
+	try {
+		ret = new char*[sets]; // Our tag array will hold tags of each block in a 2d array of size (sets * associativity * tagBytes)
+		for (unsigned i = 0; i < sets; i++) {
+			ret[i] = new char[tagBytes * assoc];
+		}
+	}
+	catch (bad_alloc &) {
+		die("could not allocate memory.");
 	}
 	unsigned size = 0;
 	for (unsigned i = 0; i < sets; i++) {
 		for (unsigned j = 0; j < tagBytes * assoc; j++) {
-			size += sizeof(ret[i][j]);
+			size += 1;
+			ret[i][j] = '0';
 		}
 	}
 	cout << "Successfully allocated a tag array of size " << size << " bytes." << endl;
@@ -181,17 +189,18 @@ char** allocateTag(unsigned memSize, unsigned lineSize, unsigned assoc, unsigned
 
 void memWrite(unsigned address, unsigned assoc, char** cache, char** tagArr, char* mainMem, const string & data, unsigned sets, unsigned lineSize) {
 	// Translate the main memory address to a cache address [set][offset]
-	unsigned tag, set, offset;
+	unsigned tag, offset, set;
+	int block;
 	bitTranslate(address, tag, set, offset, sets, lineSize);
 	if (setIsEmpty(cache, set, lineSize, assoc)) {
 		for (char c : data) {
-
+			cache[set][]; 
 		}
 	}
-
 }
 
 void bitTranslate(unsigned address, unsigned & tag, unsigned & set, unsigned & offset, unsigned sets, unsigned lineSize) {
+	// Translates memory index to give values for tag, set, and offset.
 	tag = set = offset = 0;
 	for (unsigned i = 0; i < bitCount(lineSize); i++) {
 		offset |= (address & 1); // Write bit to offset
@@ -204,14 +213,13 @@ void bitTranslate(unsigned address, unsigned & tag, unsigned & set, unsigned & o
 	tag = address;
 }
 
-bool setIsEmpty(char** cache, unsigned set, unsigned lineSize, unsigned assoc) {
+int setIsEmpty(char** cache, unsigned set, unsigned lineSize, unsigned assoc) {
 	for (unsigned i = 0; i < assoc; i++) { // For each line in the set
 		for (unsigned j = 0; j < lineSize; j++) { // Check each byte in the line
-			if (cache[set][i * lineSize + j] != 0) {
-				return 0;
+			if (cache[set][i * lineSize + j] != '0') {
+				return -1;
 			}
 		}
 	}
-	return true;
-
+	return 1; // If we couldn't find a taken line, the set is empty.
 }
