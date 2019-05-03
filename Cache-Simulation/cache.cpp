@@ -1,23 +1,27 @@
 #include <iostream>
 #include <fstream>
-#include <string>
 #include <sstream>
+#include <string>
 #include <cmath> // ceil() and log() for calculating bit count of an integer
 using namespace std;
 void die(const string & e);
 unsigned bitCount(unsigned val); // Takes an unsigned value and returns how many bits are required to hold it.
 unsigned setCount(unsigned cacheSize, unsigned lineSize, unsigned assoc); // Count # of sets
-char* allocate(unsigned size); // Dynamically allocate main memory
-char** allocateCache(unsigned cacheSize, unsigned lineSize, unsigned assoc, unsigned sets); // Dynamically allocate cache as as 2d array
-char** allocateTag(unsigned memSize, unsigned lineSize, unsigned assoc, unsigned sets); // Tag array: associative memory
+int* allocate(unsigned size); // Dynamically allocate main memory
+int** allocateCache(unsigned cacheSize, unsigned lineSize, unsigned assoc, unsigned sets); // Dynamically allocate cache as as 2d array
+int** allocateTag(unsigned memSize, unsigned lineSize, unsigned assoc, unsigned sets); // Tag array: associative memory
 // Write to memory
 void memWrite(unsigned address, unsigned assoc,
-	char** cache, char** tagArr, char* mainMem, 
-	const string & data, unsigned sets, unsigned lineSize); 
+	int** cache, int** tagArr, int* mainMem, 
+	int data, unsigned sets, unsigned lineSize); 
+// Read function
+void memRead(unsigned address, unsigned assoc, int** cache, int** tagArr, int* mainMem, unsigned sets, unsigned lineSize);
 // Translates a memory address into a tag, set, and offset
-void bitTranslate(unsigned address, unsigned & tag, unsigned & set, unsigned & offset, unsigned sets, unsigned lineSize); 
+void bitTranslate(unsigned address, int & tag, unsigned & set, unsigned & offset, unsigned sets, unsigned lineSize); 
 // Checks if a set block is empty, returns the index of the first empty block it finds or -1 if it's empty.
-int setIsEmpty(char** cache, int set, unsigned lineSize, unsigned assoc);
+int whichLine(unsigned address, int tag, int** tagArr, int** cache, unsigned set, unsigned lineSize, unsigned assoc, unsigned sets);
+// Translates a cache address to a memory address.
+unsigned cacheToMem(int** tagArr, unsigned lineSize, unsigned line, unsigned set, unsigned sets);
 int main() {
 	ifstream in;
 	in.open("input.txt");
@@ -31,6 +35,7 @@ int main() {
 	// The initial read. One instance of each of the first four items (A-D), so we read each of the four items once.
 	for (unsigned i = 0; i < 4; i++) {
 		string line;
+		char inChar;
 		getline(in, line);
 		istringstream lineIn(line);
 		lineIn >> inChar;
@@ -75,14 +80,14 @@ int main() {
 	// Now we intialize our memory system with some dynamic memory allocation
 	// Get the number of sets.
 	unsigned sets = setCount(cacheSize, lineSize, assoc); // # of sets
-	char* mainMem = allocate(memSize); // Main memory
-	char** cache = allocateCache(cacheSize, lineSize, assoc, sets); // Cache
-	char** tagArr = allocateTag(memSize, lineSize, assoc, sets); // Associative tag array
+	int* mainMem = allocate(memSize); // Main memory
+	int** cache = allocateCache(cacheSize, lineSize, assoc, sets); // Cache
+	int** tagArr = allocateTag(memSize, lineSize, assoc, sets); // Associative tag array
 
 	// The processing loop
 	while (!in.eof()) {
 		unsigned address; // Gets the memory address passed by input file
-		string writeData; // Treated as a char array holding our data (in bytes)
+		int writeData; // Treated as a char array holding our data (in bytes)
 		in >> inChar;
 		switch (inChar) {
 		case 'E':
@@ -91,15 +96,13 @@ int main() {
 			if (inChar == 'W') {
 				// Write access. Pass to the write function
 				in >> writeData;
-				memWrite(address, assoc, tagArr, cache, mainMem, writeData, sets, lineSize);
-			}
-			else if (inChar == 'R') {
-				// Read access. Pass to the read function
-				in >> writeData;
+				memWrite(address, assoc, cache, tagArr, mainMem, writeData, sets, lineSize);
 			}
 			break;
 		case 'F':
 			// Display the address, value in the simulated cache, and value in the simulated main memory.
+			in >> address;
+			memRead(address, assoc, cache, tagArr, mainMem, sets, lineSize);
 			break;
 		}
 	}
@@ -108,6 +111,8 @@ int main() {
 	// Remember to free your memory, or the computer will explode.
 	delete[] mainMem;
 	delete[] cache;
+	delete[] tagArr;
+	system("pause");
 	return 0;
 }
 
@@ -124,26 +129,31 @@ unsigned bitCount(unsigned val) {
 	return ceil(log(val) / log(2)); // Calculate # of bits required to hold a value
 }
 
-char* allocate(unsigned size) { // Allocate our block of simulated main memory.
-	char* ret = nullptr;
+int* allocate(unsigned size) { // Allocate our block of simulated main memory.
+	int* ret = nullptr;
+	unsigned memSize = 0;
 	try {
-		ret = new char[size];
+		ret = new int[size / 4];
 	}
 	catch (bad_alloc &) {
 		die("could not allocate memory.");
 	}
-	cout << "Succesfully allocated a main memory of size " << sizeof(ret[0]) * size << " bytes." << endl;
+	for (unsigned i = 0; i < size / 4; i++) {
+		ret[i] = 0;
+		memSize += sizeof(ret[i]);
+	}
+	cout << "Succesfully allocated a main memory of size " << size << " bytes." << endl;
 	return ret;
 }
 
-char** allocateCache(unsigned cacheSize, unsigned lineSize, unsigned assoc, unsigned sets) {
-	char** ret = nullptr;
+int** allocateCache(unsigned cacheSize, unsigned lineSize, unsigned assoc, unsigned sets) {
+	int** ret = nullptr;
 	// Cache will be indexed like so:
 	// [set #][line in set]
 	try {
-		ret = new char*[sets]; // Pointer to pointers to sets (arrays of bytes).
+		ret = new int*[sets]; // Pointer to pointers to sets (arrays of bytes).
 		for (unsigned i = 0; i < sets; i++) {
-			ret[i] = new char[lineSize * assoc]; // lineSize * asoc = # of bytes per set. Each set has this # of bytes
+			ret[i] = new int[(lineSize / 4) * assoc]; 
 		}
 	}
 	catch (bad_alloc &) {
@@ -152,25 +162,23 @@ char** allocateCache(unsigned cacheSize, unsigned lineSize, unsigned assoc, unsi
 	// Initialize the cache
 	unsigned size = 0;
 	for (unsigned i = 0; i < sets; i++) {
-		for (unsigned j = 0; j < assoc * lineSize; j++) {
-			size += 1;
-			ret[i][j] = '0';
+		for (unsigned j = 0; j < (lineSize / 4) * assoc; j++) {
+			size += sizeof(ret[i][j]);
+			ret[i][j] = 0;
 		}
 	}
 	cout << "Successfully allocated a cache of size " << size << " bytes." << endl;
 	return ret;
 }
 
-char** allocateTag(unsigned memSize, unsigned lineSize, unsigned assoc, unsigned sets) { 
+int** allocateTag(unsigned memSize, unsigned lineSize, unsigned assoc, unsigned sets) { 
 	// Allocates an associative array to hold tags and translate addresses
-	// Get # of bits needed to hold a tag
-	double tagBits = bitCount(memSize) - bitCount(sets) - bitCount(lineSize);
-	unsigned tagBytes = ceil(tagBits / 8); // Just enough bytes to hold the # of bits per tag
-	char** ret = nullptr;
+	// We are assuming that a tag is a 4 byte integer.
+	int** ret = nullptr;
 	try {
-		ret = new char*[sets]; // Our tag array will hold tags of each block in a 2d array of size (sets * associativity * tagBytes)
+		ret = new int*[sets]; // Our tag array will hold tags of each block in a 2d array of size (sets * associativity * tagBytes)
 		for (unsigned i = 0; i < sets; i++) {
-			ret[i] = new char[tagBytes * assoc];
+			ret[i] = new int[assoc];
 		}
 	}
 	catch (bad_alloc &) {
@@ -178,48 +186,112 @@ char** allocateTag(unsigned memSize, unsigned lineSize, unsigned assoc, unsigned
 	}
 	unsigned size = 0;
 	for (unsigned i = 0; i < sets; i++) {
-		for (unsigned j = 0; j < tagBytes * assoc; j++) {
-			size += 1;
-			ret[i][j] = '0';
+		for (unsigned j = 0; j < assoc; j++) {
+			size += sizeof(int);
+			ret[i][j] = -1;
 		}
 	}
 	cout << "Successfully allocated a tag array of size " << size << " bytes." << endl;
 	return ret;
 }
 
-void memWrite(unsigned address, unsigned assoc, char** cache, char** tagArr, char* mainMem, const string & data, unsigned sets, unsigned lineSize) {
+void memWrite(unsigned address, unsigned assoc, int** cache, int** tagArr, int* mainMem, int data, unsigned sets, unsigned lineSize) {
 	// Translate the main memory address to a cache address [set][offset]
-	unsigned tag, offset, set;
-	int block;
+	unsigned offset, set;
+	int tag;
 	bitTranslate(address, tag, set, offset, sets, lineSize);
-	if (setIsEmpty(cache, set, lineSize, assoc)) {
-		for (char c : data) {
-			cache[set][]; 
+	int block = whichLine(address, tag, tagArr, cache, set, lineSize, assoc, sets);
+	if (block >= 0) {
+		cache[set][block] = data;
+		tagArr[set][block] = tag;
+	}
+	else { // This means the cache set is full and the line we are writing to is not in memory. 
+		// We must evict the last line in the set back into main memory, shift each line forward, then write to the first line.
+		// This effectively turns the cache sets into queues (first in last out)
+		// Translate the line we are evicting to its associated index
+		unsigned evictAddress = cacheToMem(tagArr, lineSize, assoc - 1, set, sets);
+		// Copy line to memory and reset the tag in the tag memory
+		for (unsigned i = 0; i < lineSize / 4; i++) {
+			mainMem[evictAddress + i] = cache[set][i];
+		}
+		// Reset the tag
+		tagArr[set][assoc - 1] = -1;
+		// Shift every word forward to the next line
+		for (unsigned i = 0; i < lineSize / 4; i++) {
+			cache[set][i + (lineSize / 4)] = cache[set][i];
+		}
+		// Write to the first line in the set
+		cache[set][offset] = data;
+	}
+}
+
+void memRead(unsigned address,unsigned assoc, int** cache, int** tagArr, int* mainMem, unsigned sets, unsigned lineSize) {
+	// First check the cache for the memory block.
+	unsigned set, offset;
+	int tag, line = -1;
+	bitTranslate(address, tag, set, offset, sets, lineSize);
+	for (int i = 0; i < assoc; i++) {
+		if (cacheToMem(tagArr, lineSize, i, set, sets) == (address - (address % lineSize)) / 4) {
+			line = i;
 		}
 	}
-}
-
-void bitTranslate(unsigned address, unsigned & tag, unsigned & set, unsigned & offset, unsigned sets, unsigned lineSize) {
-	// Translates memory index to give values for tag, set, and offset.
-	tag = set = offset = 0;
-	for (unsigned i = 0; i < bitCount(lineSize); i++) {
-		offset |= (address & 1); // Write bit to offset
-		address >>= 1; // Shift out last bit of address
-	}
-	for (unsigned i = 0; i < bitCount(sets); i++) {
-		set |= (address & 1);
-		address >>= 1;
-	}
-	tag = address;
-}
-
-int setIsEmpty(char** cache, unsigned set, unsigned lineSize, unsigned assoc) {
-	for (unsigned i = 0; i < assoc; i++) { // For each line in the set
-		for (unsigned j = 0; j < lineSize; j++) { // Check each byte in the line
-			if (cache[set][i * lineSize + j] != '0') {
-				return -1;
+	// Cache miss. Read from the given memory address then copy the memory block into cache.
+	if (line == -1) {
+		int writeData = mainMem[address / 4];
+		memWrite(address, assoc, cache, tagArr, mainMem, writeData, sets, lineSize); // Write to memory
+		// Get cache line containing the memory block
+		for (int i = 0; i < assoc; i++) {
+			if (cacheToMem(tagArr, lineSize, line, set, sets == (address - (address % lineSize)) / 4)) {
+				line = i;
 			}
 		}
 	}
-	return 1; // If we couldn't find a taken line, the set is empty.
+	cout << "Reading memory at address " << address << ". Value at address in main memory: " << mainMem[address / 4]
+		<< " | Value at address in cache: " << cache[set][line + offset] << endl;
+}
+
+
+void bitTranslate(unsigned address, int & tag, unsigned & set, unsigned & offset, unsigned sets, unsigned lineSize) {
+	// Translates memory index to give values for tag, set, and offset.
+	tag = set = offset = 0;
+	offset = (address & (lineSize - 1)) / 4; 
+	address >>= bitCount(lineSize);
+	set = (address & (sets - 1));
+	address >>= bitCount(sets);
+	tag = address;
+}
+
+int whichLine(unsigned address, int tag, int** tagArr, int** cache, unsigned set, unsigned lineSize, unsigned assoc, unsigned sets) {
+	int ret; // Set index or -1 if no unused line is found
+	// First check if a given memory block is in the cache by comparing the tags. If it is, we want to write to that block.
+	// (May need to get rid of this function for turnin).
+	for (ret = 0; ret < assoc; ret++) {
+		if (cacheToMem(tagArr, lineSize, ret, set, sets) == (address - (address % lineSize) / 4)) {
+			return ret;
+		}
+	}
+	// Check if there is an empty block we can write to.
+	int empty; // Keeps track of whether a line is empty. Is set to 0 as soon as we see a nonzero byte.
+	for (ret = 0; ret < assoc; ret++) { // For each line in the set
+		empty = 1;
+		for (unsigned i = 0; i < lineSize / 4; i++) {
+			if (cache[set][ret + i]) {
+				empty = 0;
+				exit;
+			}
+			if (empty == 1 && i == ((lineSize / 4) - 1))
+				return ret; // Return the first empty line we see 
+		}
+	}
+	return -1; // If we made it this far, none of our lines are empty.
+}
+
+unsigned cacheToMem(int** tagArr, unsigned lineSize, unsigned line, unsigned set, unsigned sets) {
+	unsigned ret = 0;
+	int tag = tagArr[set][line];
+	ret |= tag;
+	ret <<= (bitCount(sets));
+	ret |= set;
+	ret <<= (bitCount(lineSize));
+	return ret / 4;
 }
