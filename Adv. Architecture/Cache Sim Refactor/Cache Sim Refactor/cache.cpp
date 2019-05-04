@@ -5,7 +5,7 @@
 using namespace std;
 void die(const string & e);
 unsigned bitCount(unsigned val);
-
+/*
 class Set {
 public:
 	Set() {}
@@ -68,49 +68,79 @@ void Set::evictLine(unsigned lineSize, unsigned assoc) {
 		}
 	}
 }
+*/
+
+class AddressConverter { 
+// This class either does these conversions depending on input:
+	// (lineSize, number of sets, address) -> Tag, Set, Offset
+	// (Tag, Set, Offset) -> Address
+// Or it takes a a tag, set, and offset and gives back a memory address.
+public:
+	unsigned tag, set, offset, address;
+	AddressConverter(unsigned inOffset, unsigned lineSize, unsigned setCount, unsigned inAddress) {
+		tag = set = offset = 0;
+		address = inAddress;
+		offset = (inAddress & (lineSize - 1));
+		inAddress >>= bitCount(lineSize);
+		set = (inAddress & (setCount - 1));
+		inAddress >>= bitCount(setCount);
+		tag = inAddress;
+	}
+	AddressConverter(unsigned lineSize, unsigned setCount, unsigned inTag, unsigned inSet, unsigned offset) {
+		address = 0;
+		address |= inTag;
+		address <<= (bitCount(setCount));
+		address |= inSet;
+		address <<= (bitCount(lineSize));
+		address |= offset;
+	}
+};
 
 class CacheSys { // Includes dynamically allocated cache memory and associative memory for tags
 public:
-	int** mainMem; // Line -> Offset
-	Set* cacheMem; // Set -> Line -> Offset
+	int* mainMem; // Line -> Offset
+	int*** cacheMem; // Set -> Line -> Offset
 	int** tagMem; // Set -> Line
 	unsigned lineSize;
 	unsigned memSize;
 	unsigned assoc;
 	unsigned sets;
 	unsigned cacheSize;
-	unsigned tag;
+	/* unsigned tag;
 	unsigned set;
 	int line;
+	*/
 	unsigned offset;
-	void addresstoCache(unsigned address);
+	//void addresstoCache(unsigned address);
 	CacheSys(unsigned inMemSize, unsigned inAssoc, unsigned inLineSize, unsigned inCacheSize); // Creates cache object and intializes cache memory.
 	~CacheSys(); // Deletes dynamically allocated memory.
 	void write(unsigned address, int data);
-	unsigned cacheToMem();
+	//unsigned cacheToMem();
 	void read(unsigned address);
-	bool tagCheck(unsigned address);
+	int tagCheck(unsigned tag, unsigned set);
 };
 
 CacheSys::CacheSys(unsigned inMemSize, unsigned inAssoc, unsigned inLineSize, unsigned inCacheSize) {
 	memSize = inMemSize;
+	unsigned memIndex = memSize / 4;
 	assoc = inAssoc;
 	lineSize = inLineSize;
 	cacheSize = inCacheSize;
 	sets = cacheSize / lineSize / assoc;
-	unsigned lineCount = memSize / lineSize;
 	mainMem = nullptr;
 	cacheMem = nullptr;
 	tagMem = nullptr;
 	try {
-		mainMem = new int*[lineCount];
-		for (unsigned i = 0; i < lineCount; i++) {
-			mainMem[i] = new int[lineSize / 4];
-		};
-		cacheMem = new Set[sets];
+		mainMem = new int[memIndex];
+		cacheMem = new int**[sets];
+		for (unsigned i = 0; i < sets; i++) {
+			cacheMem[i] = new int*[assoc];
+			for (unsigned j = 0; j < assoc; j++) {
+				cacheMem[i][j] = new int[lineSize / 4];
+			}
+		}
 		tagMem = new int*[sets];
 		for (unsigned i = 0; i < sets; i++) {
-			cacheMem[i] = Set(lineSize, assoc);
 			tagMem[i] = new int[assoc];
 		}
 	}
@@ -118,19 +148,19 @@ CacheSys::CacheSys(unsigned inMemSize, unsigned inAssoc, unsigned inLineSize, un
 		die("could not allocate memory.");
 	}
 	// Initialize everything to -1.
-	for (unsigned i = 0; i < lineCount; i++) {
-		for (unsigned j = 0; j < lineSize / 4; j++) {
-			mainMem[i][j] = -1;
-		}
+	for (unsigned i = 0; i < memIndex; i++) {
+		mainMem[i] = -1;
 	}
 	for (unsigned i = 0; i < sets; i++) {
-		for (unsigned k = 0; k < assoc; k++) {
-			tagMem[i][k] = -1;
+		for (unsigned j = 0; j < assoc; j++) {
+			tagMem[i][j] = -1;
+			for (unsigned k = 0; k < lineSize / 4; k++) {
+				cacheMem[i][j][k] = -1;
+			}
 		}
 	}
-
 }
-
+/*
 void CacheSys::addresstoCache(unsigned address) {
 	tag = set = offset = 0;
 	offset = (address & (lineSize - 1)) / 4;
@@ -139,7 +169,8 @@ void CacheSys::addresstoCache(unsigned address) {
 	address >>= bitCount(sets);
 	tag = address;
 }
-
+*/
+/*
 unsigned CacheSys::cacheToMem() {
 	unsigned ret = 0;
 	ret |= tag;
@@ -148,25 +179,55 @@ unsigned CacheSys::cacheToMem() {
 	ret <<= (bitCount(lineSize));
 	return ret / lineSize / 4; // Divide by 4 to get memory index. (Assuming 4 byte words).
 } 
+*/
 
-bool CacheSys::tagCheck(unsigned address) {
-	// Check tag against address and set line that contains it
+int CacheSys::tagCheck(unsigned tag, unsigned set) {
+	// Check tag against address and set line that contains it, or -1 if the line is not found in the cache.
 	for (unsigned i = 0; i < assoc; i++) {
-		if (tagMem[set][i] == tag) {
-			unsigned addressFromMem = tag;
-			addressFromMem <<= bitCount(sets);
-			addressFromMem |= set;
-			addressFromMem <<= (bitCount(memSize) - bitCount(sets));
-			if ((address - address % lineSize) == addressFromMem) {
-				line = i;
-				return 1;
-			}
-		}
+		if (tagMem[set][i] == tag) 
+				return i;
 	}
-	return 0;
+	return -1;
 }
 
 void CacheSys::write(unsigned address, int data) {
+	AddressConverter addrVals(offset, lineSize, sets, address);
+	int line = tagCheck(addrVals.tag, addrVals.set);
+	if (line == -1) {
+		// Check if the set is full
+		for (unsigned i = 0; i < assoc; i++) {
+			if (tagMem[addrVals.set][i] == -1) {
+				// Empty, writeable line found. Write to it.
+				cacheMem[addrVals.set][i][addrVals.offset / 4] = data;
+				tagMem[addrVals.set][i] = addrVals.tag;
+				return;
+			}
+		}
+		 
+			// Copy the first element in the set back to main memory.
+			AddressConverter cacheVals(lineSize, sets, tagMem[addrVals.set][0], addrVals.set, 0);
+			for (unsigned i = 0; i < lineSize / 4; i++) {
+				mainMem[cacheVals.address + i] = cacheMem[addrVals.set][0][i];
+			}
+			// Shift every line in the cache back by one
+			for (unsigned i = 0; i < assoc - 1; i++) {
+				for (unsigned j = 0; j < (lineSize / 4) - 1; j++) {
+					cacheMem[addrVals.set][i][j] = cacheMem[addrVals.set][i + 1][j];
+				}
+				tagMem[addrVals.set][i] = tagMem[addrVals.set][i + 1];
+			}
+			// Write to the last line in the cache.
+			//delete cacheMem[addrVals.set][assoc - 1];
+			cacheMem[addrVals.set][assoc - 1][addrVals.offset / 4] = data;
+			tagMem[addrVals.set][assoc - 1] = addrVals.tag;
+	}
+	else {
+		// There is an empty line. Write to it.
+		cacheMem[addrVals.set][line][addrVals.offset / 4] = data;
+		tagMem[addrVals.set][line] = addrVals.tag;
+	}
+
+	/*
 	addresstoCache(address);
 	// First check if the address is already in the cache and write to it if it is
 	if (tagCheck(address)) {
@@ -179,7 +240,7 @@ void CacheSys::write(unsigned address, int data) {
 		unsigned memIndex = cacheToMem();
 		for (unsigned i = 0; i < lineSize / 4; i++) { // Get the contents of the last line in the set.
 			mainMem[memIndex][i] = cacheMem[set].getWord(0, i); // Write each word to the corresponding memory location.
-		}
+		 }
 		cacheMem[set].evictLine(lineSize, assoc);
 		for (unsigned i = 1; i < assoc; i++) {
 			tagMem[set][i] = tagMem[set][i - 1]; // Update tags. Shifted up by one.
@@ -191,13 +252,20 @@ void CacheSys::write(unsigned address, int data) {
 		cacheMem[set].writeWord(line, offset, data);
 		tagMem[set][line] = tag;
 	}
+	*/
 }
 
 void CacheSys::read(unsigned address) {
-	addresstoCache(address);
-	tagCheck(address);
-	cout << "Address: " << address << " Memory: " << mainMem[address / sets][offset] << " Cache: " 
-		<< cacheMem[set].getWord(line, offset) << endl;
+	// addresstoCache(address);
+	AddressConverter addrVals(offset, lineSize, sets, address);
+	int line = tagCheck(addrVals.tag, addrVals.set);
+	cout << "Address: " << address << " Memory: " << mainMem[address / 4] << " Cache: ";
+	if (line == -1) {
+		cout << "memory block not found in cache." << endl;
+	}
+	else {
+		cout << cacheMem[addrVals.set][line][addrVals.offset / 4] << endl;
+	}
 }
 
 CacheSys::~CacheSys() {
