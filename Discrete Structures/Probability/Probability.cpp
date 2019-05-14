@@ -33,18 +33,23 @@ double monotonic(unsigned a, unsigned b) {
 
 bool isMonotonic(const vector<int>& vi)  {
 	if (vi.size() <= 2) return true; // A sequence of 2 or fewer numbers is always monotonic.
-	bool increasing = 0;
 	unsigned i; // Initial index to check if it's monotonically increasing or decreasing,	
-
-	for (i = 0; i < vi.size() - 1 && vi[i] == vi[i + 1]; i++) 
-		if (vi[i + 1] > vi[i]) increasing = 1;
-	
+	bool increasing = 0;
+	for (i = 0; (i < (vi.size() - 1)) && !increasing; i++) {
+		if (vi[i + 1] > vi[i]) {
+			increasing = 1;
+			break;
+		}
+		if (vi[i + 1] < vi[i]) {
+			break;
+		}
+	}
 	if (increasing) {
 		for (; i < (vi.size() - 1); i++) {
 			if (vi[i + 1] < vi[i])
 				return false;
 		}
-	}
+	} 
 	else {  
 		for (; i < (vi.size() - 1); i++) {
 			if (vi[i + 1] > vi[i])
@@ -77,13 +82,13 @@ bool isStrictlyMonotonic(const vector<int>& vi) {
 	if (vi[0] < vi[1]) increasing = 1;
 
 	if (increasing) {
-		for (unsigned i = 1; i < (vi.size() - 1); i++) {
+		for (unsigned i = 0; i < (vi.size() - 1); i++) {
 			if (vi[i + 1] <= vi[i])
 				return false;
 		}
 	}
 	else {
-		for (unsigned i = 1; i < (vi.size() - 1); i++) {
+		for (unsigned i = 0; i < (vi.size() - 1); i++) {
 			if (vi[i + 1] >= vi[i])
 				return false;
 		}
