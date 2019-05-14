@@ -10,13 +10,23 @@ bool isMonotonic(const vector<int>& vi);
 double strictlyMonotonic(unsigned a, unsigned b);
 bool isStrictlyMonotonic(const vector<int>& vi);
 double okNesting(unsigned n);
-void shuffle(vector<int> n);
+template <typename T> void shuffle(vector<T> & v);
 int main() {
 	// ---> Instead of building a vector every trial, create a vector once then shuffle it every trial. <----
 	cout << "3 bit probability numbers: " << endl;
 	cout << "Monotonic: " << monotonic(2, 3) << endl;
 	cout << "Strictly monotonic: " << strictlyMonotonic(2, 3) << endl;
+	cout << "% Chance of OK nesting, 10 sets of parens" << okNesting(10) << endl;
 	return 0;
+}
+
+template <typename T> void shuffle(vector<T> & v) {
+	for (unsigned i = 0; i < v.size(); i++) {
+		unsigned randi = rand() % (v.size() - 1); // Random index
+		T temp = v[randi]; // The 3-step swap
+		v[randi] = v[i];
+		v[i] = temp;
+	}
 }
 
 double monotonic(unsigned a, unsigned b) {
@@ -25,12 +35,12 @@ double monotonic(unsigned a, unsigned b) {
 	// Might not even need to construct a vector for this;
 	// Will do it the vector way for now.
 	vector<int> vi;
+	for (unsigned i = 0; i < b; i++) {
+		vi.push_back(rand() % a);
+	}
 	unsigned count = 0; // count of # of times the sequence was monotonic.
 	for (unsigned i = 0; i < TRIALS; i++) {
-		vi.clear();
-		for (unsigned i = 0; i < b; i++) {
-			vi.push_back(rand() % a);
-		}
+		shuffle(vi);
 		if (isMonotonic(vi)) count++;
 	}
 	return double(count) / TRIALS; // fraction of times the sequence was monotonic.
@@ -68,12 +78,12 @@ double strictlyMonotonic(unsigned a, unsigned b) {
 	// Same as monotonic, except now we also disallow repeats of numbers.
 	// Do it the vector way like before,
 	vector<int> vi;
+	for (unsigned i = 0; i < b; i++) {
+		vi.push_back(rand() % a);
+	}
 	unsigned count = 0;
 	for (unsigned i = 0; i < TRIALS; i++) {
-		vi.clear();
-		for (unsigned i = 0; i < b; i++) {
-			vi.push_back(rand() % a);
-		}
+		shuffle(vi);
 		if (isStrictlyMonotonic(vi)) count++;
 	}
 	return double(count) / TRIALS;
@@ -106,28 +116,24 @@ double okNesting(unsigned n) {
 	// Check the probability of 
 	// a sequence of n left parens and n right parens
 	// being properly nested
-	vector<char> vi; // First build our vector.
+	vector<char> vc; // First build our vector.
 	for (unsigned i = 0; i < (n * 2); i++) {
-		vi.push_back(rand() % 2 + 40);
+		vc.push_back(rand() % 2 + 40);
 	}
 	stack<char> stc; // Stack of chars. Push onto stack if '(', pop if ')'
 	for (unsigned i = 0; i < TRIALS; i++) {
-		// Shuffle the vector. Iterate and swap each element with another random element.
-		for (unsigned i = 0; i < vi.size(); i++) {
-			unsigned swapIndex = rand() % (vi.size() - 1);
-			char temp = vi[swapIndex];
-			vi[swapIndex] = vi[i];
-			vi[i] = temp;
-		}
-		for (char c : vi) {
+		shuffle(vc);
+		for (char c : vc) {
 			if (c == 40)
 				stc.push(c);
 			if (c == 41) {
 				if (stc.empty())  // Mismatched parens.
-					return false;
+					break;
 				stc.pop();
 			}
  		}
+		count++;
 	}
-	return true;
+	return double(count) / TRIALS;
 }
+
