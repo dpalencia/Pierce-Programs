@@ -2,15 +2,20 @@
 #include <iostream>
 #include <vector>
 #include <cstdlib>
+#include <stack> // For the parens
 #define TRIALS 1000000
 using namespace std;
 double monotonic(unsigned a, unsigned b);
 bool isMonotonic(const vector<int>& vi);
 double strictlyMonotonic(unsigned a, unsigned b);
 bool isStrictlyMonotonic(const vector<int>& vi);
+double okNesting(unsigned n);
+void shuffle(vector<int> n);
 int main() {
-	cout << "FIX THE MONOTONIC LOGIC!" << monotonic(2, 3) << endl;
-	cout << "Probability that a sequence of 3 numbers in [0, 2) is stricly monotonic:\n" << strictlyMonotonic(2, 3) << endl;
+	// ---> Instead of building a vector every trial, create a vector once then shuffle it every trial. <----
+	cout << "3 bit probability numbers: " << endl;
+	cout << "Monotonic: " << monotonic(2, 3) << endl;
+	cout << "Strictly monotonic: " << strictlyMonotonic(2, 3) << endl;
 	return 0;
 }
 
@@ -92,6 +97,37 @@ bool isStrictlyMonotonic(const vector<int>& vi) {
 			if (vi[i + 1] >= vi[i])
 				return false;
 		}
+	}
+	return true;
+}
+
+double okNesting(unsigned n) {
+	unsigned count = 0; // Count the number of positives in our trials.
+	// Check the probability of 
+	// a sequence of n left parens and n right parens
+	// being properly nested
+	vector<char> vi; // First build our vector.
+	for (unsigned i = 0; i < (n * 2); i++) {
+		vi.push_back(rand() % 2 + 40);
+	}
+	stack<char> stc; // Stack of chars. Push onto stack if '(', pop if ')'
+	for (unsigned i = 0; i < TRIALS; i++) {
+		// Shuffle the vector. Iterate and swap each element with another random element.
+		for (unsigned i = 0; i < vi.size(); i++) {
+			unsigned swapIndex = rand() % (vi.size() - 1);
+			char temp = vi[swapIndex];
+			vi[swapIndex] = vi[i];
+			vi[i] = temp;
+		}
+		for (char c : vi) {
+			if (c == 40)
+				stc.push(c);
+			if (c == 41) {
+				if (stc.empty())  // Mismatched parens.
+					return false;
+				stc.pop();
+			}
+ 		}
 	}
 	return true;
 }
