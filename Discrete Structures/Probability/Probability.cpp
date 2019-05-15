@@ -11,16 +11,23 @@ double strictlyMonotonic(unsigned a, unsigned b);
 bool isStrictlyMonotonic(const vector<int>& vi);
 double okNesting(unsigned n);
 template <typename T> void shuffle(vector<T> & v);
+double duel(double a, double b);
+bool outcome(double probability);
+double flip(double p); // Need to clarify on k heads.
+double prettyLady(unsigned gridX, unsigned gridY, unsigned ladyX, unsigned ladyY);
 int main() {
-	// ---> Instead of building a vector every trial, create a vector once then shuffle it every trial. <----
 	cout << "3 bit probability numbers: " << endl;
 	cout << "Monotonic: " << monotonic(2, 3) << endl;
 	cout << "Strictly monotonic: " << strictlyMonotonic(2, 3) << endl;
-	cout << "% Chance of OK nesting, 10 sets of parens" << okNesting(10) << endl;
+	cout << "% Chance of OK nesting, 2 sets of parens\n" << okNesting(2) << endl;
+	cout << "In a duel where both duellists hit 50% of the time and A shoots first:\n"
+		 << "Probability duellist A wins: " << duel(.5, .5) << endl;
+	cout << "In a 2x2 grid, chance of seeing the pretty lady at point(1, 1) given a random path: " << prettyLady(2, 2, 1, 1) << endl;
 	return 0;
 }
 
 template <typename T> void shuffle(vector<T> & v) {
+	if (v.size() < 2) return;
 	for (unsigned i = 0; i < v.size(); i++) {
 		unsigned randi = rand() % (v.size() - 1); // Random index
 		T temp = v[randi]; // The 3-step swap
@@ -35,12 +42,12 @@ double monotonic(unsigned a, unsigned b) {
 	// Might not even need to construct a vector for this;
 	// Will do it the vector way for now.
 	vector<int> vi;
-	for (unsigned i = 0; i < b; i++) {
-		vi.push_back(rand() % a);
-	}
 	unsigned count = 0; // count of # of times the sequence was monotonic.
 	for (unsigned i = 0; i < TRIALS; i++) {
-		shuffle(vi);
+		vi.clear();
+		for (unsigned j = 0; j < b; j++) {
+			vi.push_back(rand() % a);
+		}
 		if (isMonotonic(vi)) count++;
 	}
 	return double(count) / TRIALS; // fraction of times the sequence was monotonic.
@@ -79,11 +86,14 @@ double strictlyMonotonic(unsigned a, unsigned b) {
 	// Do it the vector way like before,
 	vector<int> vi;
 	for (unsigned i = 0; i < b; i++) {
-		vi.push_back(rand() % a);
+		vi.push_back(rand() % (a - 1));
 	}
 	unsigned count = 0;
 	for (unsigned i = 0; i < TRIALS; i++) {
-		shuffle(vi);
+		vi.clear();
+		for (unsigned j = 0; j < b; j++) {
+			vi.push_back(rand() % a);
+		}
 		if (isStrictlyMonotonic(vi)) count++;
 	}
 	return double(count) / TRIALS;
@@ -117,23 +127,74 @@ double okNesting(unsigned n) {
 	// a sequence of n left parens and n right parens
 	// being properly nested
 	vector<char> vc; // First build our vector.
-	for (unsigned i = 0; i < (n * 2); i++) {
-		vc.push_back(rand() % 2 + 40);
-	}
+	vc.insert(vc.begin(), n, '(');
+	vc.insert(vc.begin(), n, ')');
 	stack<char> stc; // Stack of chars. Push onto stack if '(', pop if ')'
 	for (unsigned i = 0; i < TRIALS; i++) {
 		shuffle(vc);
+		bool mismatched = 0;
 		for (char c : vc) {
-			if (c == 40)
+			if (c == '(')
 				stc.push(c);
-			if (c == 41) {
-				if (stc.empty())  // Mismatched parens.
+			if (c == ')') {
+				if (stc.empty()) {  // Mismatched parens.
+					mismatched = 1;
 					break;
+				}
 				stc.pop();
 			}
  		}
-		count++;
+		if (!mismatched)
+			count++;
 	}
 	return double(count) / TRIALS;
 }
 
+double duel(double a, double b) {
+	unsigned count = 0;
+	for (unsigned i = 0; i < TRIALS; i++) {
+		bool dead = 0; // Tells us if one of the duellists was unfortunate
+		while (!dead) { // Keep going until the duel is over
+			dead = outcome(a);
+			if (dead) // Mr. A wins
+				count++;
+			else	
+				dead = outcome(b);
+		}
+	}
+	return double(count) / TRIALS;
+}
+bool outcome(double probability) { // Generates a bool outcome given a probability
+	return (rand() / (RAND_MAX + 1.0)) < probability;
+}
+
+double flip(double p) {
+	return 1;
+}
+
+double prettyLady(unsigned gridX, unsigned gridY, unsigned ladyX, unsigned ladyY) {
+	vector<char> vc; // This vector will represent paths. 
+	// A 0 means a move "right" (x)
+	// A 1 means a move "up" (y)
+	unsigned count = 0;
+	vc.insert(vc.begin(), gridX, 0);
+	vc.insert(vc.begin(), gridY, 1);
+	char x = 0; // X position
+	char y = 0; // Y position
+	for (unsigned i = 0; i < TRIALS; i++) {
+		shuffle(vc);
+		x = 0;
+		y = 0;
+		for (char c : vc) {
+			if (c == 0)
+				x++;
+			else if (c == 1)
+				y++;
+			if (x == ladyX && y == ladyY) {
+				count++;
+				break;
+			}
+		}
+	}
+	return double(count) / TRIALS;
+}
