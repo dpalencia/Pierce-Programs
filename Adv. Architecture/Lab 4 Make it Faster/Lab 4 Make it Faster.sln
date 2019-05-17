@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28803.352
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Lab 4 Make it Faster", "Lab 4 Make it Faster.vcxproj", "{F68A0E64-AA51-4174-A996-BC0C491129C9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F68A0E64-AA51-4174-A996-BC0C491129C9}.Debug|x64.ActiveCfg = Debug|x64
+		{F68A0E64-AA51-4174-A996-BC0C491129C9}.Debug|x64.Build.0 = Debug|x64
+		{F68A0E64-AA51-4174-A996-BC0C491129C9}.Debug|x86.ActiveCfg = Debug|Win32
+		{F68A0E64-AA51-4174-A996-BC0C491129C9}.Debug|x86.Build.0 = Debug|Win32
+		{F68A0E64-AA51-4174-A996-BC0C491129C9}.Release|x64.ActiveCfg = Release|x64
+		{F68A0E64-AA51-4174-A996-BC0C491129C9}.Release|x64.Build.0 = Release|x64
+		{F68A0E64-AA51-4174-A996-BC0C491129C9}.Release|x86.ActiveCfg = Release|Win32
+		{F68A0E64-AA51-4174-A996-BC0C491129C9}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {642447D6-6315-4B2E-930F-B9541E40DDD4}
+	EndGlobalSection
+EndGlobal

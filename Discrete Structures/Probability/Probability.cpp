@@ -15,6 +15,7 @@ double duel(double a, double b);
 bool outcome(double probability);
 double flip(double p); // Need to clarify on k heads.
 double prettyLady(unsigned gridX, unsigned gridY, unsigned ladyX, unsigned ladyY);
+
 int main() {
 	cout << "3 bit probability numbers: " << endl;
 	cout << "Monotonic: " << monotonic(2, 3) << endl;
@@ -22,7 +23,7 @@ int main() {
 	cout << "% Chance of OK nesting, 2 sets of parens\n" << okNesting(2) << endl;
 	cout << "In a duel where both duellists hit 50% of the time and A shoots first:\n"
 		 << "Probability duellist A wins: " << duel(.5, .5) << endl;
-	cout << "In a 2x2 grid, chance of seeing the pretty lady at point(1, 1) given a random path: " << prettyLady(2, 2, 1, 1) << endl;
+	cout << "In a 2x2 grid, chance of seeing the pretty lady at point(1, 1) given a random path: " << prettyLady(8, 8, 4, 4) << endl;
 	return 0;
 }
 
@@ -164,6 +165,7 @@ double duel(double a, double b) {
 	}
 	return double(count) / TRIALS;
 }
+
 bool outcome(double probability) { // Generates a bool outcome given a probability
 	return (rand() / (RAND_MAX + 1.0)) < probability;
 }
