@@ -13,17 +13,17 @@ double okNesting(unsigned n);
 template <typename T> void shuffle(vector<T> & v);
 double duel(double a, double b);
 bool outcome(double probability);
-double flip(double p); // Need to clarify on k heads.
+double flip(double p, unsigned n, unsigned k); // Need to clarify on k heads.
 double prettyLady(unsigned gridX, unsigned gridY, unsigned ladyX, unsigned ladyY);
 
 int main() {
-	cout << "3 bit probability numbers: " << endl;
-	cout << "Monotonic: " << monotonic(2, 3) << endl;
-	cout << "Strictly monotonic: " << strictlyMonotonic(2, 3) << endl;
+	cout << "Monotonic(2, 3): " << monotonic(2, 3) << endl;
+	cout << "Strictly monotonic(3, 3): " << strictlyMonotonic(3, 3) << endl;
 	cout << "% Chance of OK nesting, 2 sets of parens\n" << okNesting(2) << endl;
 	cout << "In a duel where both duellists hit 50% of the time and A shoots first:\n"
 		 << "Probability duellist A wins: " << duel(.5, .5) << endl;
-	cout << "In a 2x2 grid, chance of seeing the pretty lady at point(1, 1) given a random path: " << prettyLady(8, 8, 4, 4) << endl;
+	cout << "Flipping a coin 100 times, probability of getting 50 heads if p(heads) == .5: " << flip(.5, 100, 50) << endl;
+	cout << "In an 8x8 grid, chance of seeing the pretty lady at point(4, 4) given a random path: " << prettyLady(8, 8, 4, 4) << endl;
 	return 0;
 }
 
@@ -170,9 +170,21 @@ bool outcome(double probability) { // Generates a bool outcome given a probabili
 	return (rand() / (RAND_MAX + 1.0)) < probability;
 }
 
-double flip(double p) {
-	return 1;
+double flip(double p, unsigned n, unsigned k) {
+	/*  We  have  a  crooked  coin  that  comes  up  heads  with  probability  p. We  flip  the  coin  n times; what is the probability that we get exactly k heads ?*/
+	unsigned count = 0;
+	for (unsigned i = 0; i < TRIALS; i++) {
+		unsigned heads = 0;
+		for (unsigned j = 0; j < n; j++) {
+			if (outcome(p)) 
+				heads++;
+		}
+		if (heads == k)
+			count++;
+	}
+	return double(count) / TRIALS;
 }
+
 
 double prettyLady(unsigned gridX, unsigned gridY, unsigned ladyX, unsigned ladyY) {
 	vector<char> vc; // This vector will represent paths. 
