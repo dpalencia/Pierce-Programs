@@ -29,6 +29,7 @@ int main() {
 	string varstr; // A set containing all of our variables
 	bool equiv; // Tells us if an expression is equivalent
 	cout << "Enter two bool expressions with letter variables (a-z), (A-Z), to see if they are equivalent.\n";
+	cout << "Enter an empty space to exit.\n";
 	for (getline(cin, input); input != ""; getline(cin, input)) {
 		equiv = 1; // Set to 1 to begin
 		// Check if our character is an operator and get each variable
@@ -157,7 +158,7 @@ void split(const string & inputstring, string & banana, string & split) { // Spl
 
 bool inc(string & bools) {
 	for(int i = bools.length() - 1; i >= 0; i--) { // Loop "backwards" through the string
-		cout << bools << endl;
+		// cout << bools << endl;
 		if (bools[i] == '0') {
 			bools[i]++;
 			for (int j = i + 1; j < bools.length(); j++) 

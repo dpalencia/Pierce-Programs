@@ -1,4 +1,6 @@
-// Probability.cpp : This file contains the 'main' function. Program execution begins and ends there.
+// Palencia, Daniel
+// 5-18-19
+// CS 542 Lab Assignment 14 Probability
 #include <iostream>
 #include <vector>
 #include <cstdlib>
@@ -171,7 +173,6 @@ bool outcome(double probability) { // Generates a bool outcome given a probabili
 }
 
 double flip(double p, unsigned n, unsigned k) {
-	/*  We  have  a  crooked  coin  that  comes  up  heads  with  probability  p. We  flip  the  coin  n times; what is the probability that we get exactly k heads ?*/
 	unsigned count = 0;
 	for (unsigned i = 0; i < TRIALS; i++) {
 		unsigned heads = 0;
