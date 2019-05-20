@@ -7,8 +7,6 @@
 #include <iostream>
 #include <climits> // added for unsigned max
 #include <Windows.h> // added for timing functions, etc
-#include <thread>
-#include <vector>
 ULONGLONG getTime64(LPFILETIME a); // added
 using namespace std; // added
 
@@ -23,7 +21,7 @@ double gaussian_box_muller() {
 
 	// Continue generating two uniform random variables
 	// until the square of their "euclidean distance" 
-	// is less than unity
+	// is less than unity 
 	do {
 		x = 2.0 * rand() / static_cast<double>(RAND_MAX)-1;
 		y = 2.0 * rand() / static_cast<double>(RAND_MAX)-1;
@@ -33,38 +31,18 @@ double gaussian_box_muller() {
 	return x * sqrt(-2 * log(euclid_sq) / euclid_sq);
 }
 
-void gaussian_calc_call(double & payoff_sum, const double & K, const double & v, const double & T, const double & S_adjust, unsigned num_sims) {
-	double S_cur = 0.0;
-	for (unsigned i = 0; i < num_sims; i++) {
-		double gauss_bm = gaussian_box_muller();
-		S_cur = S_adjust * exp(sqrt(v * v * T) * gauss_bm);
-		payoff_sum += max(S_cur - K, 0.0);
-	}
-}
-
-void gaussian_calc_put(double& payoff_sum, const double& K, const double& v, const double& T, const double& S_adjust, unsigned num_sims) {
-	double S_cur = 0.0;
-	for (int i = 0; i < num_sims; i++) {
-		double gauss_bm = gaussian_box_muller();
-		S_cur = S_adjust * exp(sqrt(v * v * T) * gauss_bm);
-		payoff_sum += max(K - S_cur, 0.0);
-	}
-}
-
 // Pricing a European vanilla call option with a Monte Carlo method
 double monte_carlo_call_price(const int& num_sims, const double& S, const double& K, const double& r, const double& v, const double& T) {
 	double S_adjust = S * exp(T * (r - 0.5 * v * v));
 	double S_cur = 0.0;
 	double payoff_sum = 0.0;
-	vector<thread> vt;
-	unsigned int numThreads = thread().hardware_concurrency();
-	for (unsigned i = 0; i < numThreads; i++)
-		vt.push_back(thread(gaussian_calc_call, ref(payoff_sum), ref(K), ref(v), (T), ref(S_adjust), num_sims / numThreads));
 
-	for (thread& t : vt) {
-		t.join();
+	for (int i = 0; i < num_sims; i++) {
+		double gauss_bm = gaussian_box_muller();
+		S_cur = S_adjust * exp(sqrt(v * v * T) * gauss_bm);
+		payoff_sum += max(S_cur - K, 0.0);
 	}
-	
+
 	return (payoff_sum / static_cast<double>(num_sims)) * exp(-r * T);
 }
 
@@ -73,14 +51,13 @@ double monte_carlo_put_price(const int& num_sims, const double& S, const double&
 	double S_adjust = S * exp(T * (r - 0.5 * v * v));
 	double S_cur = 0.0;
 	double payoff_sum = 0.0;
-	vector<thread> vt;
-	unsigned int numThreads = thread().hardware_concurrency();
-	for (unsigned i = 0; i < numThreads; i++) {
-		vt.push_back(thread(gaussian_calc_put, ref(payoff_sum), ref(K), ref(v), (T), ref(S_adjust), num_sims / numThreads));
+
+	for (int i = 0; i < num_sims; i++) {
+		double gauss_bm = gaussian_box_muller();
+		S_cur = S_adjust * exp(sqrt(v * v * T) * gauss_bm);
+		payoff_sum += max(K - S_cur, 0.0);
 	}
-	for (thread& t : vt) {
-		t.join();
-	}
+
 	return (payoff_sum / static_cast<double>(num_sims)) * exp(-r * T);
 }
 

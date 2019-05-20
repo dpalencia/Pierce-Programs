@@ -1,0 +1,54 @@
+Enter number of simulations to run:1000000
+
+The starting local time is:11:4:17.894
+The   ending local time is:11:4:18.751
+Process user time:0.859375 (8593750)
+Elapsed clock time:0.857
+CPU busy percentage:100.277
+Number of Paths: 1000000
+Underlying:      100
+Strike:          100
+Risk-Free Rate:  0.05
+Volatility:      0.2
+Maturity:        1
+Call Price:      10.4857
+Put Price:       5.57507
+
+
+----------------------------------------
+
+Enter number of simulations to run:1000000
+
+The starting local time is:11:4:54.456
+The   ending local time is:11:4:55.306
+Process user time:0.828125 (8281250)
+Elapsed clock time:0.85
+CPU busy percentage:97.4265
+Number of Paths: 1000000
+Underlying:      100
+Strike:          100
+Risk-Free Rate:  0.05
+Volatility:      0.2
+Maturity:        1
+Call Price:      10.4857
+Put Price:       5.57507
+
+-------------------------------------------
+
+Enter number of simulations to run:1000000
+
+The starting local time is:11:5:16.104
+The   ending local time is:11:5:16.985
+Process user time:0.859375 (8593750)
+Elapsed clock time:0.881
+CPU busy percentage:97.5454
+Number of Paths: 1000000
+Underlying:      100
+Strike:          100
+Risk-Free Rate:  0.05
+Volatility:      0.2
+Maturity:        1
+Call Price:      10.4857
+Put Price:       5.57507
+
+-----------------------------------------------
