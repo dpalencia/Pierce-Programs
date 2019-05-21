@@ -52,3 +52,39 @@ Call Price:      10.4857
 Put Price:       5.57507
 
 -----------------------------------------------
+
+Enter number of simulations to run:10000000
+
+The starting local time is:11:6:25.426
+The   ending local time is:11:6:34.21
+Process user time:8.57813 (85781250)
+Elapsed clock time:8.595
+CPU busy percentage:99.8037
+Number of Paths: 10000000
+Underlying:      100
+Strike:          100
+Risk-Free Rate:  0.05
+Volatility:      0.2
+Maturity:        1
+Call Price:      10.4532
+Put Price:       5.57414
+
+--------------------------------------------------
+
+Enter number of simulations to run:10000000
+
+The starting local time is:11:6:52.970
+The   ending local time is:11:7:1.629
+Process user time:8.625 (86250000)
+Elapsed clock time:8.659
+CPU busy percentage:99.6073
+Number of Paths: 10000000
+Underlying:      100
+Strike:          100
+Risk-Free Rate:  0.05
+Volatility:      0.2
+Maturity:        1
+Call Price:      10.4532
+Put Price:       5.57414
+
+--------------------------------------------------
