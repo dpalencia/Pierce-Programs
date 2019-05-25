@@ -23,8 +23,8 @@ double gaussian_box_muller() {
 	// until the square of their "euclidean distance" 
 	// is less than unity
 	do {
-		x = 2.0 * rand() / static_cast(RAND_MAX)-1;
-		y = 2.0 * rand() / static_cast(RAND_MAX)-1;
+		x = 2.0 * rand() / static_cast<double>(RAND_MAX)-1;
+		y = 2.0 * rand() / static_cast<double>(RAND_MAX)-1;
 		euclid_sq = x * x + y * y;
 	} while (euclid_sq >= 1.0);
 
@@ -43,7 +43,7 @@ double monte_carlo_call_price(const int& num_sims, const double& S, const double
 		payoff_sum += max(S_cur - K, 0.0);
 	}
 
-	return (payoff_sum / static_cast(num_sims)) * exp(-r * T);
+	return (payoff_sum / static_cast<double>(num_sims)) * exp(-r * T);
 }
 
 // Pricing a European vanilla put option with a Monte Carlo method
@@ -58,7 +58,7 @@ double monte_carlo_put_price(const int& num_sims, const double& S, const double&
 		payoff_sum += max(K - S_cur, 0.0);
 	}
 
-	return (payoff_sum / static_cast(num_sims)) * exp(-r * T);
+	return (payoff_sum / static_cast<double>(num_sims)) * exp(-r * T);
 }
 
 int main(int argc, char** argv) {

@@ -1,7 +1,6 @@
 // The following program was extracted from:
 // https://www.quantstart.com/articles/European-vanilla-option-pricing-with-C-via-Monte-Carlo-methods
 // It has been modified for use as a CS546 lab assignment.
-
 #include <algorithm>    // Needed for the "max" function
 #include <cmath>
 #include <iostream>
@@ -9,6 +8,9 @@
 #include <Windows.h> // added for timing functions, etc
 #include <thread>
 #include <vector>
+#include <random> // uniform real distribution
+#include <ctime>
+#define GAUSS_RAND_MAX 4294967295 // 2^32 - 1 because we're generating random 32 bit unsigneds
 ULONGLONG getTime64(LPFILETIME a); // added
 using namespace std; // added
 
@@ -16,37 +18,71 @@ using namespace std; // added
 // gaussian random numbers - necessary for the Monte Carlo method below
 // Note that C++11 actually provides std::normal_distribution<> in 
 // the  library, which can be used instead of this function
-double gaussian_box_muller() {
-	double x = 0.0;
-	double y = 0.0;
-	double euclid_sq = 0.0;
 
+// Using a faster Intel random number algorithm from here:
+// https://software.intel.com/en-us/articles/fast-random-number-generator-on-the-intel-pentiumr-4-processor/
+unsigned fastrand() {
+	static unsigned rand = time(0); // Using the current time as the initial seed
+	rand = 214013 * rand + 2531011;
+	return rand;
+}
+double gaussian_box_muller() {
+	double x;
+	double y;
+	double euclid_sq;
+	double logmult;
+	double ret;
 	// Continue generating two uniform random variables
 	// until the square of their "euclidean distance" 
 	// is less than unity
 	do {
-		x = 2.0 * rand() / static_cast<double>(RAND_MAX)-1;
-		y = 2.0 * rand() / static_cast<double>(RAND_MAX)-1;
+		x = 2.0 * fastrand() / GAUSS_RAND_MAX - 1;
+		y = 2.0 * fastrand() / GAUSS_RAND_MAX - 1;
 		euclid_sq = x * x + y * y;
 	} while (euclid_sq >= 1.0);
-
-	return x * sqrt(-2 * log(euclid_sq) / euclid_sq);
+	logmult = -2 * log(euclid_sq) / euclid_sq;
+	__asm {
+		fld logmult
+		fsqrt
+		fld x
+		fmul
+		fstp ret
+	}
+	return ret;
 }
 
-void gaussian_calc_call(double & payoff_sum, const double & K, const double & v, const double & T, const double & S_adjust, unsigned num_sims) {
+void gaussian_calc_call(double& payoff_sum, const double& K, const double& v, const double& T, const double& S_adjust, unsigned num_sims) {
 	double S_cur = 0.0;
+	double sqrtCalc;
+	__asm {
+		fld v
+		fld v
+		fmul
+		fld T
+		fsqrt
+		fstp sqrtCalc
+	}
 	for (unsigned i = 0; i < num_sims; i++) {
 		double gauss_bm = gaussian_box_muller();
-		S_cur = S_adjust * exp(sqrt(v * v * T) * gauss_bm);
+		S_cur = S_adjust * exp(sqrtCalc * gauss_bm);
 		payoff_sum += max(S_cur - K, 0.0);
 	}
 }
 
 void gaussian_calc_put(double& payoff_sum, const double& K, const double& v, const double& T, const double& S_adjust, unsigned num_sims) {
 	double S_cur = 0.0;
+	double sqrtCalc;
+	__asm {
+		fld v
+		fld v
+		fmul
+		fld T
+		fsqrt
+		fstp sqrtCalc
+	}
 	for (int i = 0; i < num_sims; i++) {
 		double gauss_bm = gaussian_box_muller();
-		S_cur = S_adjust * exp(sqrt(v * v * T) * gauss_bm);
+		S_cur = S_adjust * exp(sqrtCalc * gauss_bm);
 		payoff_sum += max(K - S_cur, 0.0);
 	}
 }
@@ -64,7 +100,7 @@ double monte_carlo_call_price(const int& num_sims, const double& S, const double
 	for (thread& t : vt) {
 		t.join();
 	}
-	
+
 	return (payoff_sum / static_cast<double>(num_sims)) * exp(-r * T);
 }
 
